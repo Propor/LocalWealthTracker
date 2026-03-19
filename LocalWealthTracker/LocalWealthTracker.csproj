@@ -8,15 +8,16 @@
 		<RootNamespace>LocalWealthTracker</RootNamespace>
 
 		<!-- Version — bump this before each release -->
-		<Version>1.0.0</Version>
-		<AssemblyVersion>1.0.0</AssemblyVersion>
-		<FileVersion>1.0.0</FileVersion>
+		<Version>1.0.1</Version>
+		<AssemblyVersion>1.0.1</AssemblyVersion>
+		<FileVersion>1.0.1</FileVersion>
 
 		<!-- App metadata -->
 		<AssemblyTitle>Local Wealth Tracker</AssemblyTitle>
 		<Description>Path of Exile wealth tracker using poe.ninja prices</Description>
 		<Company>LocalWealthTracker</Company>
 		<Product>LocalWealthTracker</Product>
+		<ApplicationIcon>Resources\Wealth.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
