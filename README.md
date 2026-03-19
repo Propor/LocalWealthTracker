@@ -20,6 +20,20 @@ However, since this project is open source, you should always verify
 the code yourself or have someone you trust review it before entering 
 your POESESSID. I encourage you to do so.
 
+🔐 Why POESESSID and not OAuth?
+GGG (Grinding Gear Games) supports OAuth 2.1, which would be the 
+ideal solution — it provides scoped, revocable access tokens instead 
+of full session access. However, OAuth requires registering the 
+application with GGG directly. This takes time and communication 
+with their team.
+
+🎯 Why does this tool exist?
+Tools like Wealthy Exile already exist and do a great job.
+While I have nothing against those tools and their developers — 
+everyone deserves to be paid for their work — I don't share the vision of paying for a tool every new league.
+This tool runs 100% on your machine. Your credentials never leave your computer (except to 
+pathofexile.com, where they belong).
+
 🤖 AI Disclosure
 This project was originally created by me, for me (and two real-life 
 friends). The code was generated with the assistance of Claude AI 
