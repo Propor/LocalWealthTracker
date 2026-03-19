@@ -1,21 +1,23 @@
-﻿using System.Collections.ObjectModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using LiveChartsCore;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using LocalWealthTracker.Helpers;
+using LocalWealthTracker.Models;
+using LocalWealthTracker.Services;
+using Microsoft.Win32;
+using SkiaSharp;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using LiveChartsCore;
-using LiveChartsCore.Defaults;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using LocalWealthTracker.Models;
-using LocalWealthTracker.Services;
-using Microsoft.Win32;
-using SkiaSharp;
-using LocalWealthTracker.Helpers;
+
 
 namespace LocalWealthTracker.ViewModels;
 
@@ -51,6 +53,19 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private WealthSnapshot? _selectedSnapshot;
     [ObservableProperty] private bool _isShowingUnpriced;
 
+    // ── Update ──────────────────────────────────────────────────
+    private readonly UpdateService _updateService = new();
+
+    [ObservableProperty] private bool _updateAvailable;
+    [ObservableProperty] private string _updateText = "";
+    [ObservableProperty] private string _currentVersion = "";
+    [ObservableProperty] private bool _isUpdating;
+    [ObservableProperty] private int _updateProgress;
+    [ObservableProperty] private string _updateProgressText = "";
+
+    private UpdateInfo? _pendingUpdate;
+
+
     // ── Chart ───────────────────────────────────────────────────
     [ObservableProperty] private ISeries[] _chartSeries = Array.Empty<ISeries>();
     [ObservableProperty] private Axis[] _chartXAxes = new Axis[] { new() };
@@ -80,7 +95,107 @@ public partial class MainViewModel : ObservableObject
         _autoTimer = new DispatcherTimer();
         _autoTimer.Tick += async (_, _) => await RefreshAsync();
 
+        CurrentVersion = $"v{UpdateService.GetCurrentVersion()}";
+
         LoadFromSettings();
+
+        // Check for updates in background after startup
+        _ = CheckForUpdateAsync();
+    }
+
+    // ── Update commands ─────────────────────────────────────────
+
+    private async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            // Small delay so the UI loads first
+            await Task.Delay(3000);
+
+            _pendingUpdate = await _updateService.CheckForUpdateAsync();
+
+            if (_pendingUpdate != null)
+            {
+                UpdateAvailable = true;
+                UpdateText =
+                    $"Update available: {_pendingUpdate.LatestVersion} " +
+                    $"({_pendingUpdate.FileSizeDisplay})";
+            }
+        }
+        catch
+        {
+            // Silent fail — update check is non-critical
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (_pendingUpdate == null) return;
+
+        var result = MessageBox.Show(
+            $"Download and install {_pendingUpdate.LatestVersion}?\n\n" +
+            $"Size: {_pendingUpdate.FileSizeDisplay}\n" +
+            $"The application will restart after updating.\n\n" +
+            $"Release notes:\n{TruncateNotes(_pendingUpdate.ReleaseNotes)}",
+            "Update Available",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information,
+            MessageBoxResult.Yes);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        IsUpdating = true;
+        UpdateProgressText = "Starting download…";
+
+        var progress = new Progress<(int Percent, string Status)>(p =>
+        {
+            UpdateProgress = p.Percent;
+            UpdateProgressText = p.Status;
+        });
+
+        var success = await _updateService.DownloadAndInstallAsync(
+            _pendingUpdate, progress);
+
+        if (success)
+        {
+            UpdateProgressText = "Restarting…";
+            // Give the updater script a moment to start
+            await Task.Delay(500);
+            Application.Current.Shutdown();
+        }
+        else
+        {
+            IsUpdating = false;
+            UpdateProgressText = "";
+            MessageBox.Show(
+                "Update failed. Please try again or download manually from GitHub.",
+                "Update Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand]
+    private void DismissUpdate()
+    {
+        UpdateAvailable = false;
+        _pendingUpdate = null;
+    }
+
+    [RelayCommand]
+    private void OpenReleasePage()
+    {
+        if (_pendingUpdate?.ReleaseUrl is { } url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+    }
+
+    private static string TruncateNotes(string notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return "(no release notes)";
+        return notes.Length > 500 ? notes[..500] + "…" : notes;
     }
 
     // ── Search ──────────────────────────────────────────────────

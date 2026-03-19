@@ -135,9 +135,15 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
             <RowDefinition Height="Auto"/>
+            <!-- Update banner -->
+            <RowDefinition Height="Auto"/>
+            <!-- Summary -->
             <RowDefinition Height="*"/>
+            <!-- Content -->
             <RowDefinition Height="Auto"/>
+            <!-- Status -->
         </Grid.RowDefinitions>
 
         <!-- ═══ Row 0 — Toolbar ═══ -->
@@ -176,8 +182,114 @@
             </DockPanel>
         </Border>
 
-        <!-- ═══ Row 1 — Summary ═══ -->
-        <Border Grid.Row="1" Background="#2a2a48" Padding="16,10"
+        <!-- ═══ Row 1 — Update Banner (only visible when update available) ═══ -->
+        <Border Grid.Row="1" Padding="12,8"
+        Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#2a3a2a"/>
+                    <Setter Property="BorderBrush" Value="#4ade80"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                            <Setter Property="Background" Value="#2a2a3a"/>
+                            <Setter Property="BorderBrush" Value="#f1c40f"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+
+            <DockPanel>
+                <!-- Buttons (right side) -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                    VerticalAlignment="Center">
+
+                    <!-- Progress bar (visible during download) -->
+                    <ProgressBar Value="{Binding UpdateProgress}"
+                         Maximum="100" Width="120" Height="14"
+                         Background="#333355" Foreground="#4ade80"
+                         Margin="0,0,8,0"
+                         Visibility="{Binding IsUpdating, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Download status text -->
+                    <TextBlock Text="{Binding UpdateProgressText}"
+                       FontSize="11" Foreground="#888"
+                       VerticalAlignment="Center" Margin="0,0,12,0"
+                       Visibility="{Binding IsUpdating, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Release notes link -->
+                    <Button Content="📋 Notes" Command="{Binding OpenReleasePageCommand}"
+                    Padding="10,4" FontSize="12" Margin="0,0,6,0"
+                    Visibility="{Binding IsUpdating, 
+                        Converter={StaticResource BoolToVis},
+                        ConverterParameter=Invert}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Update button -->
+                    <Button Command="{Binding InstallUpdateCommand}"
+                    Padding="12,4" FontSize="12" Margin="0,0,6,0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Content" Value="⬇ Update"/>
+                                <Setter Property="Background" Value="#2d5a2d"/>
+                                <Setter Property="BorderBrush" Value="#4ade80"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                        <Setter Property="Content" Value="Updating…"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Dismiss -->
+                    <Button Content="✕" Command="{Binding DismissUpdateCommand}"
+                    Padding="6,4" FontSize="12">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Foreground" Value="#666"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <!-- Update text (left side) -->
+                <TextBlock VerticalAlignment="Center" FontSize="13">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#4ade80"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                    <Setter Property="Foreground" Value="#f1c40f"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+            <Run Text="🔔 " FontSize="14"/>
+            <Run Text="{Binding UpdateText}"/>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
+        <!-- ═══ Row 2 — Summary ═══ -->
+        <Border Grid.Row="2" Background="#2a2a48" Padding="16,10"
                 BorderBrush="#333355" BorderThickness="0,0,0,1">
             <WrapPanel VerticalAlignment="Center">
                 <TextBlock FontSize="22" FontWeight="Bold" Foreground="#f1c40f"
@@ -211,8 +323,8 @@
             </WrapPanel>
         </Border>
 
-        <!-- ═══ Row 2 — Main content ═══ -->
-        <Grid Grid.Row="2">
+        <!-- ═══ Row 3 — Main content ═══ -->
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300" MinWidth="200"/>
                 <ColumnDefinition Width="Auto"/>
@@ -674,16 +786,23 @@
             </DockPanel>
         </Grid>
 
-        <!-- ═══ Row 3 — Status bar ═══ -->
-        <Border Grid.Row="3" Background="#1a1a2a" Padding="12,6"
-                BorderBrush="#333355" BorderThickness="0,1,0,0">
+        <!-- ═══ Row 4 — Status bar ═══ -->
+        <Border Grid.Row="4" Background="#1a1a2a" Padding="12,6"
+        BorderBrush="#333355" BorderThickness="0,1,0,0">
             <Grid>
                 <TextBlock Text="{Binding StatusText}" FontSize="12"
-                           Foreground="#aaa"/>
-                <ProgressBar IsIndeterminate="{Binding IsBusy}"
-                             HorizontalAlignment="Right" Width="120" Height="4"
-                             Background="#333355" Foreground="#f1c40f"
-                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
+                   Foreground="#aaa"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                    VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CurrentVersion}"
+                       FontSize="11" Foreground="#555"
+                       Margin="0,0,12,0"/>
+                    <ProgressBar IsIndeterminate="{Binding IsBusy}"
+                         Width="120" Height="4"
+                         Background="#333355" Foreground="#f1c40f"
+                         />
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>
