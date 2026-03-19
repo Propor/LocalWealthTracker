@@ -23,7 +23,8 @@ public sealed class PriceService
         ("Omen",           "Omens"),
         ("Tattoo",         "Tattoos"),
         ("Artifact",       "Artifacts"),
-        ("DjinnCoin",       "Djinn Coins")
+        ("DjinnCoin",       "Djinn Coins"),
+        ("Runegraft",       "Runegrafts"),
 
     ];
 
