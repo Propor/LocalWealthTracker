@@ -5,9 +5,11 @@ ON WWW.PATHOFEXILE.COM THAT YOU COULD!
 This includes but is not limited to:
 - Viewing your account details
 - Accessing your stash tabs
-- Making trades on your behalf
 - Purchasing MTX with your points
 - Changing your account settings
+
+Here is a forum post from GGG about POESESSID:
+https://www.pathofexile.com/forum/view-thread/3328601
 
 That being said, this tool uses your POESESSID solely to retrieve 
 your stash tab contents. Your POESESSID is stored locally on your 
