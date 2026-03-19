@@ -147,6 +147,7 @@ public sealed class UpdateService
                         $"Downloading… {bytesRead / 1_048_576.0:N1} / {totalBytes / 1_048_576.0:N1} MB"));
                 }
             }
+            fileStream.Close();
 
             // 2 ── Extract
             progress?.Report((100, "Extracting…"));
@@ -168,7 +169,7 @@ public sealed class UpdateService
 
             return true;
         }
-        catch
+        catch(Exception e)
         {
             // Clean up on failure
             try
