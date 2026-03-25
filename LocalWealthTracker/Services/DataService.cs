@@ -85,6 +85,16 @@ public sealed class DataService
         SaveAllInternal(all);
     }
 
+    /// <summary>Updates the note on a single snapshot.</summary>
+    public void UpdateSnapshotNote(string id, string note)
+    {
+        var all = LoadAllInternal();
+        var snap = all.FirstOrDefault(s => s.Id == id);
+        if (snap == null) return;
+        snap.Note = note;
+        SaveAllInternal(all);
+    }
+
     /// <summary>Deletes a single snapshot by ID.</summary>
     public void DeleteSnapshot(string id)
     {

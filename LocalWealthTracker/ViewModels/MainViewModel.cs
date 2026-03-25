@@ -70,6 +70,31 @@ public partial class MainViewModel : ObservableObject
     private List<WealthSnapshot> _lastSnapshots = [];
     private List<TabSummary> _liveTabs = [];
 
+    // ── Session profit ───────────────────────────────────────────
+    [ObservableProperty] private string _sessionProfitText = "";
+    [ObservableProperty] private bool _hasSessionProfit;
+    private double _sessionStartDivine;
+    private bool _sessionStartSet;
+
+    // ── Goal ────────────────────────────────────────────────────
+    [ObservableProperty] private double _divineGoal;
+    [ObservableProperty] private double _goalProgress;
+    [ObservableProperty] private string _goalText = "";
+    [ObservableProperty] private bool _hasGoal;
+
+    // ── Notes ───────────────────────────────────────────────────
+    [ObservableProperty] private string _editingNote = "";
+    [ObservableProperty] private bool _hasSelectedSnapshot;
+    private bool _loadingNote;
+    private CancellationTokenSource? _noteSaveCts;
+
+    // ── Diff ────────────────────────────────────────────────────
+    [ObservableProperty] private WealthSnapshot? _pinnedSnapshot;
+    [ObservableProperty] private string _pinnedSnapshotId = "";
+    [ObservableProperty] private bool _isDiffMode;
+    [ObservableProperty] private bool _canShowDiff;
+    public ObservableCollection<DiffItem> DiffItems { get; } = [];
+
     // ── Collections ─────────────────────────────────────────────
     public ObservableCollection<TabSummary> Tabs { get; } = [];
     public RangeObservableCollection<PricedItem> SelectedTabItems { get; } = new();
@@ -83,6 +108,9 @@ public partial class MainViewModel : ObservableObject
     private static readonly SKColor GridColor = SKColor.Parse("#333355");
     private static readonly SKColor LabelColor = SKColor.Parse("#888888");
     private static readonly SKColor DotBorder = new(30, 30, 46);
+
+    public SolidColorPaint ChartTooltipBackground { get; } = new(SKColor.Parse("#27272a"));
+    public SolidColorPaint ChartTooltipText { get; } = new(SKColor.Parse("#f4f4f5"));
 
     public MainViewModel()
     {
@@ -442,6 +470,10 @@ public partial class MainViewModel : ObservableObject
                 ? Math.Round(grandTotal / DivinePrice, 1) : 0;
             LastRefresh = DateTime.Now.ToString("HH:mm:ss");
 
+            if (!_sessionStartSet) { _sessionStartDivine = TotalDivine; _sessionStartSet = true; }
+            UpdateSessionProfit();
+            UpdateGoal();
+
             // 7 ── Snapshot
             _data.AddSnapshot(new WealthSnapshot
             {
@@ -502,6 +534,13 @@ public partial class MainViewModel : ObservableObject
         _updatingSelection = true;
 
         SelectedTab = null;
+
+        _loadingNote = true;
+        EditingNote = value?.Note ?? "";
+        _loadingNote = false;
+        HasSelectedSnapshot = value != null;
+        IsDiffMode = false;
+        CanShowDiff = value != null && PinnedSnapshot != null && PinnedSnapshot.Id != value.Id;
 
         if (value != null)
         {
@@ -595,6 +634,136 @@ public partial class MainViewModel : ObservableObject
     }
 
 
+
+    // ── Session profit ───────────────────────────────────────────
+
+    [RelayCommand]
+    private void ResetSession()
+    {
+        _sessionStartDivine = TotalDivine;
+        UpdateSessionProfit();
+    }
+
+    private void UpdateSessionProfit()
+    {
+        if (!_sessionStartSet || TotalDivine <= 0) return;
+        double profit = TotalDivine - _sessionStartDivine;
+        HasSessionProfit = true;
+        SessionProfitText = profit >= 0
+            ? $"+{profit:N1} div this session"
+            : $"{profit:N1} div this session";
+    }
+
+    // ── Goal ────────────────────────────────────────────────────
+
+    private void UpdateGoal()
+    {
+        var settings = _data.LoadSettings();
+        DivineGoal = settings.DivineGoal;
+        HasGoal = DivineGoal > 0;
+        if (HasGoal && TotalDivine > 0)
+        {
+            GoalProgress = Math.Min(100, (TotalDivine / DivineGoal) * 100);
+            GoalText = $"{TotalDivine:N1} / {DivineGoal:N0} div  ({GoalProgress:N0}%)";
+        }
+    }
+
+    // ── Notes ───────────────────────────────────────────────────
+
+    partial void OnEditingNoteChanged(string value)
+    {
+        if (_loadingNote || SelectedSnapshot == null) return;
+        SelectedSnapshot.Note = value;
+
+        _noteSaveCts?.Cancel();
+        _noteSaveCts = new CancellationTokenSource();
+        var id = SelectedSnapshot.Id;
+        var token = _noteSaveCts.Token;
+        Task.Delay(800, token).ContinueWith(_ =>
+        {
+            if (!token.IsCancellationRequested)
+                _data.UpdateSnapshotNote(id, value);
+        }, TaskScheduler.Default);
+    }
+
+    // ── Diff ────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void PinSnapshot()
+    {
+        PinnedSnapshot = SelectedSnapshot;
+        PinnedSnapshotId = PinnedSnapshot?.Id ?? "";
+        CanShowDiff = PinnedSnapshot != null && SelectedSnapshot != null
+                      && PinnedSnapshot.Id != SelectedSnapshot.Id;
+        IsDiffMode = false;
+    }
+
+    [RelayCommand]
+    private void ClearPin()
+    {
+        PinnedSnapshot = null;
+        PinnedSnapshotId = "";
+        CanShowDiff = false;
+        IsDiffMode = false;
+    }
+
+    [RelayCommand]
+    private void ToggleDiff()
+    {
+        if (!CanShowDiff) return;
+        IsDiffMode = !IsDiffMode;
+        if (IsDiffMode) RefreshDiff();
+    }
+
+    private void RefreshDiff()
+    {
+        if (PinnedSnapshot == null || SelectedSnapshot == null) return;
+
+        // from = older, to = newer
+        var from = PinnedSnapshot.Timestamp < SelectedSnapshot.Timestamp
+            ? PinnedSnapshot : SelectedSnapshot;
+        var to = PinnedSnapshot.Timestamp < SelectedSnapshot.Timestamp
+            ? SelectedSnapshot : PinnedSnapshot;
+
+        var fromMap = PriceResolver.CombineDuplicates(from.Items)
+            .ToDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+        var toMap = PriceResolver.CombineDuplicates(to.Items)
+            .ToDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+
+        var allNames = fromMap.Keys.Union(toMap.Keys, StringComparer.OrdinalIgnoreCase);
+        var results = new List<DiffItem>();
+
+        foreach (var name in allNames)
+        {
+            fromMap.TryGetValue(name, out var f);
+            toMap.TryGetValue(name, out var t);
+
+            int oldQty = f?.Quantity ?? 0;
+            int newQty = t?.Quantity ?? 0;
+            double oldChaos = f?.TotalPriceChaos ?? 0;
+            double newChaos = t?.TotalPriceChaos ?? 0;
+            double oldDiv = f?.TotalPriceDivine ?? 0;
+            double newDiv = t?.TotalPriceDivine ?? 0;
+
+            if (oldQty == newQty && Math.Abs(oldChaos - newChaos) < 0.5) continue;
+
+            results.Add(new DiffItem
+            {
+                Name = name,
+                Icon = (t ?? f)?.Icon,
+                OldQty = oldQty,
+                NewQty = newQty,
+                OldValueChaos = oldChaos,
+                NewValueChaos = newChaos,
+                OldValueDivine = oldDiv,
+                NewValueDivine = newDiv,
+            });
+        }
+
+        DiffItems.Clear();
+        foreach (var d in results.OrderByDescending(d => Math.Abs(d.ValueChangeChaos)))
+            DiffItems.Add(d);
+    }
 
     // ── Delete snapshots ────────────────────────────────────────
 
@@ -747,6 +916,7 @@ public partial class MainViewModel : ObservableObject
         SyncedTabCount = s.Tabs.Count(t => t.IsSynced);
         LoadHistory(s.League);
         UpdateAutoTimer(s.AutoRefreshMinutes);
+        UpdateGoal();
     }
 
     private void LoadHistory(string league)

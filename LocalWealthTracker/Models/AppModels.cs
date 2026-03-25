@@ -85,6 +85,7 @@ public sealed class WealthSnapshot
     public double TotalChaos { get; set; }
     public double TotalDivine { get; set; }
     public string League { get; set; } = "";
+    public string Note { get; set; } = "";
     public List<PricedItem> Items { get; set; } = [];
 
     [JsonIgnore]
@@ -136,6 +137,27 @@ public sealed class AppSettings
     public double MinItemValueChaos { get; set; } = 1.0;
     public int AutoRefreshMinutes { get; set; }
     public int PriceCacheMinutes { get; set; } = 10;
+    public double DivineGoal { get; set; } = 0;
     public List<SavedTab> Tabs { get; set; } = [];
     public List<string> TabOrder { get; set; } = [];
+}
+
+public sealed class DiffItem
+{
+    public string Name { get; init; } = "";
+    public string? Icon { get; init; }
+    public int OldQty { get; init; }
+    public int NewQty { get; init; }
+    public int QtyChange => NewQty - OldQty;
+    public double OldValueChaos { get; init; }
+    public double NewValueChaos { get; init; }
+    public double ValueChangeChaos => Math.Round(NewValueChaos - OldValueChaos, 1);
+    public double OldValueDivine { get; init; }
+    public double NewValueDivine { get; init; }
+    public double ValueChangeDivine => Math.Round(NewValueDivine - OldValueDivine, 2);
+    public bool IsGain => ValueChangeChaos >= 0;
+    public string QtyText => $"{OldQty} → {NewQty}";
+    public string ValueChangeText => ValueChangeDivine >= 0
+        ? $"+{ValueChangeDivine:N2}d"
+        : $"{ValueChangeDivine:N2}d";
 }

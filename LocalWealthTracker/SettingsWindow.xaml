@@ -291,6 +291,12 @@
                      Width="80" HorizontalAlignment="Left"
                      ToolTip="How long to reuse cached prices before fetching fresh ones from poe.ninja. Default: 10 min."/>
                 </StackPanel>
+                <StackPanel Margin="24,0,0,0">
+                    <Label Content="Divine goal (0 = off):" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding DivineGoal, UpdateSourceTrigger=PropertyChanged}"
+                     Width="80" HorizontalAlignment="Left"
+                     ToolTip="Set a divine target — a progress bar appears in the main window summary bar."/>
+                </StackPanel>
             </WrapPanel>
         </StackPanel>
 

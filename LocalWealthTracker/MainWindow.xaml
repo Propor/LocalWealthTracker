@@ -79,6 +79,7 @@
         <converters:UrlToImageConverter x:Key="UrlToImage"/>
         <converters:SparklineToPointsConverter x:Key="SparklineToPoints"/>
         <converters:ColorToBrushConverter x:Key="ColorToBrush"/>
+        <converters:EqualityConverter x:Key="Equality"/>
 
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="#f4f4f5"/>
@@ -453,29 +454,64 @@
         </Border>
 
         <!-- ═══ Row 3 — Summary ═══ -->
-        <Border Grid.Row="3" Background="#1f1f23" Padding="16,10"
+        <Border Grid.Row="3" Background="#1f1f23" Padding="16,8"
                 BorderBrush="#27272a" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock FontSize="22" FontWeight="Bold" Foreground="#b45309"
-                           Margin="0,0,24,0" VerticalAlignment="Center"
-                           ToolTip="Total wealth across all synced tabs">
-                    <Run Text="{Binding TotalDivine, StringFormat='{}{0:N1}'}"/>
-                    <Run Text=" divine" FontSize="14" Foreground="#b45309"/>
-                </TextBlock>
-                <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,24,0"
-                           VerticalAlignment="Center"
-                           ToolTip="Current divine/chaos exchange rate from poe.ninja">
-                    <Run Text="1 Divine = "/>
-                    <Run Text="{Binding DivinePrice, StringFormat='{}{0:N0}'}"/>
-                    <Run Text="c"/>
-                </TextBlock>
-                <TextBlock FontSize="13" Foreground="#71717a"
-                           VerticalAlignment="Center"
-                           ToolTip="Time of last successful refresh">
-                    <Run Text="Last: "/>
-                    <Run Text="{Binding LastRefresh}"/>
-                </TextBlock>
-            </StackPanel>
+            <DockPanel>
+                <!-- Right: goal progress bar -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding HasGoal, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding GoalText}" FontSize="11" Foreground="#71717a"
+                               VerticalAlignment="Center" Margin="0,0,8,0"
+                               ToolTip="Progress towards your divine goal"/>
+                    <ProgressBar Value="{Binding GoalProgress}" Maximum="100"
+                                 Width="120" Height="6"
+                                 Background="#27272a" Foreground="#f59e0b"
+                                 VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock FontSize="22" FontWeight="Bold" Foreground="#b45309"
+                               Margin="0,0,24,0" VerticalAlignment="Center"
+                               ToolTip="Total wealth across all synced tabs">
+                        <Run Text="{Binding TotalDivine, StringFormat='{}{0:N1}'}"/>
+                        <Run Text=" divine" FontSize="14" Foreground="#b45309"/>
+                    </TextBlock>
+                    <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,24,0"
+                               VerticalAlignment="Center"
+                               ToolTip="Current divine/chaos exchange rate from poe.ninja">
+                        <Run Text="1 Divine = "/>
+                        <Run Text="{Binding DivinePrice, StringFormat='{}{0:N0}'}"/>
+                        <Run Text="c"/>
+                    </TextBlock>
+                    <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,24,0"
+                               VerticalAlignment="Center"
+                               ToolTip="Time of last successful refresh">
+                        <Run Text="Last: "/>
+                        <Run Text="{Binding LastRefresh}"/>
+                    </TextBlock>
+                    <!-- Session profit -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                Visibility="{Binding HasSessionProfit, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding SessionProfitText}" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,6,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#4ade80"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSessionProfit}" Value="False">
+                                            <Setter Property="Foreground" Value="#ef4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button Content="↺" Command="{Binding ResetSessionCommand}"
+                                Padding="4,1" FontSize="11"
+                                ToolTip="Reset session baseline to current wealth"
+                                Background="Transparent" BorderThickness="0" Foreground="#52525b"/>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- ═══ Row 4 — Wealth Chart Banner ═══ -->
@@ -485,8 +521,10 @@
                 Series="{Binding ChartSeries}"
                 XAxes="{Binding ChartXAxes}"
                 YAxes="{Binding ChartYAxes}"
-                TooltipPosition="Hidden"
+                TooltipPosition="Top"
                 LegendPosition="Hidden"
+                TooltipBackgroundPaint="{Binding ChartTooltipBackground}"
+                TooltipTextPaint="{Binding ChartTooltipText}"
                 AnimationsSpeed="00:00:00.300"/>
         </Border>
 
@@ -655,9 +693,70 @@
                     </DockPanel>
                 </Border>
 
+                <!-- Diff grid (visible in diff mode) -->
+                <DataGrid ItemsSource="{Binding DiffItems}"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserSortColumns="True" SelectionMode="Single"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling">
+                    <DataGrid.Style>
+                        <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDiffMode}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Style>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Item" Width="*" MinWidth="160" SortMemberPath="Name">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="2,0">
+                                        <Image DockPanel.Dock="Left" Width="24" Height="24"
+                                               Margin="0,0,6,0" VerticalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               Source="{Binding Icon, Converter={StaticResource UrlToImage}}"/>
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" Foreground="#f4f4f5"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Qty" Binding="{Binding QtyText}" Width="80">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Foreground" Value="#a1a1aa"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="Change (div)" Width="100" SortMemberPath="ValueChangeDivine">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ValueChangeText}"
+                                               VerticalAlignment="Center" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#4ade80"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsGain}" Value="False">
+                                                        <Setter Property="Foreground" Value="#ef4444"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
                 <!-- Grid container — switches between priced and unpriced -->
                 <Grid>
-                    <!-- Priced items grid (visible when NOT showing unpriced) -->
+                    <!-- Priced items grid (visible when NOT showing unpriced AND NOT in diff mode) -->
                     <DataGrid x:Name="ItemsGrid"
                   ItemsSource="{Binding SelectedTabItems}"
                   AutoGenerateColumns="False" IsReadOnly="True"
@@ -672,6 +771,9 @@
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsShowingUnpriced}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsDiffMode}" Value="True">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -891,7 +993,7 @@
             <!-- Right: History -->
             <DockPanel Grid.Column="4" Margin="4">
 
-                <DockPanel DockPanel.Dock="Top" Margin="6,6,6,6">
+                <DockPanel DockPanel.Dock="Top" Margin="6,6,6,4">
                     <Button DockPanel.Dock="Right" Content="🗑 Clear All"
                             Command="{Binding DeleteAllSnapshotsCommand}"
                             Padding="8,3" FontSize="11"
@@ -901,9 +1003,63 @@
                                VerticalAlignment="Center"/>
                 </DockPanel>
 
+                <!-- Note editor (visible when a snapshot is selected) -->
+                <Border DockPanel.Dock="Bottom" Margin="4,4,4,4" Padding="6,4"
+                        Background="#1f1f23" BorderBrush="#3f3f46" BorderThickness="1"
+                        CornerRadius="4"
+                        Visibility="{Binding HasSelectedSnapshot, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="📝" FontSize="11"
+                                   Foreground="#52525b" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox Text="{Binding EditingNote, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent" BorderThickness="0" Padding="0"
+                                 Foreground="#a1a1aa" FontSize="11"
+                                 VerticalAlignment="Center"
+                                 ToolTip="Add a note to this snapshot — saved automatically"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Diff compare button (visible when a pin is set + snapshot selected) -->
+                <Border DockPanel.Dock="Bottom" Margin="4,0,4,4"
+                        Visibility="{Binding CanShowDiff, Converter={StaticResource BoolToVis}}">
+                    <Button Command="{Binding ToggleDiffCommand}" Padding="8,3" FontSize="11">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Content" Value="↔ Show Diff"/>
+                                <Setter Property="Background" Value="#1e3a2f"/>
+                                <Setter Property="BorderBrush" Value="#4ade80"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDiffMode}" Value="True">
+                                        <Setter Property="Content" Value="↔ Hide Diff"/>
+                                        <Setter Property="Background" Value="#27272a"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Border>
+
                 <ListBox ItemsSource="{Binding History}"
                          SelectedItem="{Binding SelectedSnapshot}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                            <Style.Triggers>
+                                <DataTrigger Value="True">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource Equality}">
+                                            <Binding Path="Id"/>
+                                            <Binding Path="DataContext.PinnedSnapshotId"
+                                                     RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter Property="BorderBrush" Value="#4ade80"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="Background" Value="#0d2119"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <DockPanel>
@@ -911,42 +1067,65 @@
                                         DockPanel.Dock="Right"
                                         Content="✕" Opacity="0"
                                         Style="{StaticResource DeleteXButton}"
-                                        VerticalAlignment="Center"
+                                        VerticalAlignment="Top"
                                         Margin="4,0,0,0"
                                         Command="{Binding DataContext.DeleteSnapshotCommand,
                                             RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="{Binding Id}"/>
+                                <Button x:Name="PinBtn"
+                                        DockPanel.Dock="Right"
+                                        Content="📌" Opacity="0"
+                                        VerticalAlignment="Top"
+                                        FontSize="11" Padding="4,0"
+                                        Background="Transparent" BorderThickness="0"
+                                        Foreground="#a1a1aa" Cursor="Hand"
+                                        ToolTip="Pin as diff baseline"
+                                        Command="{Binding DataContext.PinSnapshotCommand,
+                                            RelativeSource={RelativeSource AncestorType=Window}}"/>
 
                                 <TextBlock x:Name="PctText"
                                            DockPanel.Dock="Right"
                                            Text="{Binding PercentChangeText}"
                                            FontSize="10" FontWeight="SemiBold"
-                                           VerticalAlignment="Center"
+                                           VerticalAlignment="Top"
                                            Margin="6,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="#22c55e"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsUp}"
-                                                             Value="False">
-                                                    <Setter Property="Foreground"
-                                                            Value="#ef4444"/>
+                                                <DataTrigger Binding="{Binding IsUp}" Value="False">
+                                                    <Setter Property="Foreground" Value="#ef4444"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
 
-                                <TextBlock Text="{Binding Display}" FontSize="11"
-                                           TextWrapping="Wrap"
-                                           VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Display}" FontSize="11"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Note}" FontSize="10"
+                                               Foreground="#52525b" TextTrimming="CharacterEllipsis"
+                                               Margin="0,1,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Note}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
                             </DockPanel>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsMouseOver,
                                     RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
                                     Value="True">
-                                    <Setter TargetName="DeleteBtn"
-                                            Property="Opacity" Value="1"/>
+                                    <Setter TargetName="DeleteBtn" Property="Opacity" Value="1"/>
+                                    <Setter TargetName="PinBtn" Property="Opacity" Value="1"/>
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
