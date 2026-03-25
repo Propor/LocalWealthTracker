@@ -7,13 +7,10 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using LocalWealthTracker.Helpers;
 using LocalWealthTracker.Models;
 using LocalWealthTracker.Services;
-using Microsoft.Win32;
 using SkiaSharp;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -70,6 +67,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private ISeries[] _chartSeries = Array.Empty<ISeries>();
     [ObservableProperty] private Axis[] _chartXAxes = new Axis[] { new() };
     [ObservableProperty] private Axis[] _chartYAxes = new Axis[] { new() };
+    private List<WealthSnapshot> _lastSnapshots = [];
+    private List<TabSummary> _liveTabs = [];
 
     // ── Collections ─────────────────────────────────────────────
     public ObservableCollection<TabSummary> Tabs { get; } = [];
@@ -370,7 +369,7 @@ public partial class MainViewModel : ObservableObject
 
                 var (priced, unpriced) = _resolver.PriceTab(
                     items ?? new List<StashItem>(),
-                    DivinePrice, settings.MinItemValueChaos, tabInfo.Name);
+                    DivinePrice, settings.MinItemValueChaos, tabInfo.Name, tabInfo.Index);
                 double tabTotal = priced.Sum(x => x.TotalPriceChaos);
 
                 allUnpriced.AddRange(unpriced);
@@ -419,11 +418,23 @@ public partial class MainViewModel : ObservableObject
             UnpricedCount = combinedUnpriced.Count;
             ShowUnpricedTab = combinedUnpriced.Count > 0;
 
-            // Sort tabs by value, All Items first
+            // Sort tabs: respect saved user order, fall back to value for new tabs
+            var ordered = settings.TabOrder.Count > 0
+                ? tabSummaries
+                    .OrderBy(t =>
+                    {
+                        int i = settings.TabOrder.IndexOf(t.Name);
+                        return i >= 0 ? i : int.MaxValue;
+                    })
+                    .ThenByDescending(t => t.TotalDivine)
+                    .ToList()
+                : tabSummaries.OrderByDescending(t => t.TotalDivine).ToList();
+
             Tabs.Clear();
             Tabs.Add(allItemsTab);
-            foreach (var tab in tabSummaries.OrderByDescending(t => t.TotalDivine))
+            foreach (var tab in ordered)
                 Tabs.Add(tab);
+            _liveTabs = Tabs.ToList();
 
             // 6 ── Totals
             TotalChaos = Math.Round(grandTotal, 0);
@@ -470,58 +481,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    // ── CSV Export ───────────────────────────────────────────────
 
-    [RelayCommand]
-    private void ExportCsv()
-    {
-        if (_allCurrentItems.Count == 0)
-        {
-            StatusText = "⚠ Nothing to export. Select a tab or snapshot first.";
-            return;
-        }
-
-        var dialog = new SaveFileDialog
-        {
-            Title = "Export Items to CSV",
-            Filter = "CSV files (*.csv)|*.csv",
-            FileName = $"wealth_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
-            DefaultExt = ".csv"
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        try
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("Item,Tab,Category,Qty,Unit (chaos),Total (chaos),Total (divine),7d Trend %");
-
-            foreach (var item in SelectedTabItems)
-            {
-                var name = EscapeCsv(item.Name);
-                var tab = EscapeCsv(item.TabName);
-                var cat = EscapeCsv(item.Category);
-                sb.AppendLine(
-                    $"{name},{tab},{cat},{item.Quantity}," +
-                    $"{item.UnitPriceChaos:F2},{item.TotalPriceChaos:F2}," +
-                    $"{item.TotalPriceDivine:F2},{item.SparklineTrend:F1}");
-            }
-
-            File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-            StatusText = $"✅ Exported {SelectedTabItems.Count} items to {Path.GetFileName(dialog.FileName)}";
-        }
-        catch (Exception ex)
-        {
-            StatusText = $"❌ Export failed: {ex.Message}";
-        }
-    }
-
-    private static string EscapeCsv(string value)
-    {
-        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
-            return $"\"{value.Replace("\"", "\"\"")}\"";
-        return value;
-    }
 
     // ── Selection ───────────────────────────────────────────────
 
@@ -545,6 +505,7 @@ public partial class MainViewModel : ObservableObject
 
         if (value != null)
         {
+            BuildSnapshotTabs(value);
             var combined = PriceResolver.CombineDuplicates(value.Items);
             var header = value.HasPrevious
                 ? $"Snapshot — {value.Timestamp:g}  {value.PercentChangeText}"
@@ -553,10 +514,65 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
+            RestoreLiveTabs();
             ShowItems(null, "(select a tab or snapshot)");
         }
 
         _updatingSelection = false;
+    }
+
+    private void BuildSnapshotTabs(WealthSnapshot snapshot)
+    {
+        var settings = _data.LoadSettings();
+        var colorMap = settings.Tabs.ToDictionary(
+            t => t.Index,
+            t => Color.FromRgb((byte)t.ColorR, (byte)t.ColorG, (byte)t.ColorB));
+
+        var snapshotTabs = snapshot.Items
+            .GroupBy(i => i.TabIndex)
+            .Select(g =>
+            {
+                var items = g.ToList();
+                double totalChaos = items.Sum(i => i.TotalPriceChaos);
+                double divinePrice = items.FirstOrDefault()?.DivinePrice ?? 1;
+                colorMap.TryGetValue(g.Key, out var color);
+                return new TabSummary
+                {
+                    Name = items[0].TabName,
+                    Index = g.Key,
+                    Color = color.A == 0 ? Color.FromRgb(99, 128, 0) : color,
+                    Items = items,
+                    TotalChaos = Math.Round(totalChaos, 1),
+                    TotalDivine = divinePrice > 0 ? Math.Round(totalChaos / divinePrice, 2) : 0,
+                    ItemCount = items.Count
+                };
+            })
+            .OrderByDescending(t => t.TotalDivine)
+            .ToList();
+
+        double grandTotal = snapshot.Items.Sum(i => i.TotalPriceChaos);
+        double dp = snapshot.Items.FirstOrDefault()?.DivinePrice ?? 1;
+
+        Tabs.Clear();
+        Tabs.Add(new TabSummary
+        {
+            Name = "📦 All Items",
+            Index = -1,
+            Color = Color.FromRgb(241, 196, 15),
+            Items = PriceResolver.CombineDuplicates(snapshot.Items),
+            TotalChaos = Math.Round(grandTotal, 1),
+            TotalDivine = dp > 0 ? Math.Round(grandTotal / dp, 2) : 0,
+            ItemCount = snapshot.Items.Count
+        });
+        foreach (var tab in snapshotTabs)
+            Tabs.Add(tab);
+    }
+
+    private void RestoreLiveTabs()
+    {
+        Tabs.Clear();
+        foreach (var tab in _liveTabs)
+            Tabs.Add(tab);
     }
 
     private void ShowItems(List<PricedItem>? items, string header)
@@ -628,10 +644,7 @@ public partial class MainViewModel : ObservableObject
 
     private void BuildChart(List<WealthSnapshot> newestFirst)
     {
-        var ordered = newestFirst
-            .OrderBy(s => s.Timestamp)
-            .ToList();
-
+        var ordered = newestFirst.OrderBy(s => s.Timestamp).ToList();
         int n = ordered.Count;
 
         if (n == 0)
@@ -648,10 +661,7 @@ public partial class MainViewModel : ObservableObject
         {
             series.Add(new LineSeries<ObservablePoint>
             {
-                Values = new ObservablePoint[]
-                {
-                    new(0, ordered[0].TotalDivine)
-                },
+                Values = new ObservablePoint[] { new(0, ordered[0].TotalDivine) },
                 Stroke = null,
                 Fill = null,
                 GeometrySize = 10,
@@ -666,16 +676,11 @@ public partial class MainViewModel : ObservableObject
             {
                 var prev = ordered[i - 1].TotalDivine;
                 var curr = ordered[i].TotalDivine;
-                bool isUp = curr >= prev;
-                var color = isUp ? Green : Red;
+                var color = curr >= prev ? Green : Red;
 
                 series.Add(new LineSeries<ObservablePoint>
                 {
-                    Values = new ObservablePoint[]
-                    {
-                        new(i - 1, prev),
-                        new(i, curr)
-                    },
+                    Values = new ObservablePoint[] { new(i - 1, prev), new(i, curr) },
                     Stroke = new SolidColorPaint(color, 2.5f),
                     Fill = null,
                     GeometrySize = 7,
@@ -689,14 +694,18 @@ public partial class MainViewModel : ObservableObject
         }
 
         ChartSeries = series.ToArray();
+        string[] xLabels = ordered.Select(s => s.Timestamp.ToString("dd.MM HH:mm")).ToArray();
+        double yMin = ordered.Min(s => s.TotalDivine);
+        double yMax = ordered.Max(s => s.TotalDivine);
+
+        double spread = yMax - yMin;
+        double pad = spread > 0 ? spread * 0.25 : Math.Max(yMax * 0.05, 1.0);
 
         ChartXAxes = new Axis[]
         {
             new()
             {
-                Labels = ordered
-                    .Select(s => s.Timestamp.ToString("MM/dd\nHH:mm"))
-                    .ToArray(),
+                Labels = xLabels,
                 LabelsPaint = new SolidColorPaint(LabelColor),
                 TextSize = 9,
                 SeparatorsPaint = new SolidColorPaint(GridColor),
@@ -712,7 +721,9 @@ public partial class MainViewModel : ObservableObject
                 LabelsPaint = new SolidColorPaint(LabelColor),
                 TextSize = 10,
                 Labeler = v => $"{v:N1}d",
-                SeparatorsPaint = new SolidColorPaint(GridColor),
+                SeparatorsPaint = new SolidColorPaint(GridColor, 1),
+                MinLimit = yMin - pad,
+                MaxLimit = yMax + pad,
             }
         };
     }
@@ -756,6 +767,7 @@ public partial class MainViewModel : ObservableObject
         foreach (var snap in snapshots)
             History.Add(snap);
 
+        _lastSnapshots = snapshots;
         BuildChart(snapshots);
     }
 
@@ -767,5 +779,28 @@ public partial class MainViewModel : ObservableObject
             _autoTimer.Interval = TimeSpan.FromMinutes(minutes);
             _autoTimer.Start();
         }
+    }
+
+    // ── Tab ordering ─────────────────────────────────────────────
+
+    public void MoveTab(int fromIndex, int toIndex)
+    {
+        if (fromIndex == toIndex) return;
+        if (fromIndex < 0 || fromIndex >= Tabs.Count) return;
+        if (toIndex < 0 || toIndex >= Tabs.Count) return;
+
+        var tab = Tabs[fromIndex];
+        Tabs.RemoveAt(fromIndex);
+        Tabs.Insert(toIndex, tab);
+
+        SaveTabOrder();
+    }
+
+    private void SaveTabOrder()
+    {
+        var s = _data.LoadSettings();
+        // Save order of real tabs only (skip the "All Items" aggregate at index 0)
+        s.TabOrder = Tabs.Where(t => t.Index != -1).Select(t => t.Name).ToList();
+        _data.SaveSettings(s);
     }
 }

@@ -10,7 +10,7 @@ public sealed class PriceResolver(PriceService prices)
     /// </summary>
     public (List<PricedItem> Priced, List<UnpricedItem> Unpriced) PriceTab(
         IEnumerable<StashItem> items, double divinePrice,
-        double minValueChaos = 0, string tabName = "")
+        double minValueChaos = 0, string tabName = "", int tabIndex = -1)
     {
         var result = new List<PricedItem>();
         var unpriced = new List<UnpricedItem>();
@@ -49,6 +49,7 @@ public sealed class PriceResolver(PriceService prices)
                 Category = GetCategory(item.FrameType),
                 Icon = item.Icon,
                 TabName = tabName,
+                TabIndex = tabIndex,
                 Quantity = qty,
                 UnitPriceChaos = Math.Round(unitPrice.Value, 2),
                 TotalPriceChaos = Math.Round(totalChaos, 2),

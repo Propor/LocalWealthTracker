@@ -11,6 +11,7 @@ public sealed class PricedItem
     public string Category { get; init; } = "";
     public string? Icon { get; init; }
     public string TabName { get; init; } = "";
+    public int TabIndex { get; init; } = -1;
     public int Quantity { get; init; } = 1;
     public double UnitPriceChaos { get; init; }
     public double TotalPriceChaos { get; init; }
@@ -136,4 +137,5 @@ public sealed class AppSettings
     public int AutoRefreshMinutes { get; set; }
     public int PriceCacheMinutes { get; set; } = 10;
     public List<SavedTab> Tabs { get; set; } = [];
+    public List<string> TabOrder { get; set; } = [];
 }

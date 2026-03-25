@@ -7,21 +7,87 @@
         Width="1280" Height="800"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="#1e1e2e" Foreground="#e0e0e0">
+        WindowStyle="None" ResizeMode="CanResize"
+        Background="#09090b" Foreground="#f4f4f5">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="5"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="TitleBarButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#a1a1aa"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#27272a"/>
+                                <Setter Property="Foreground" Value="#f4f4f5"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#3f3f46"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleBarCloseButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#a1a1aa"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#c0392b"/>
+                                <Setter Property="Foreground" Value="#ffffff"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#922b21"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <converters:UrlToImageConverter x:Key="UrlToImage"/>
         <converters:SparklineToPointsConverter x:Key="SparklineToPoints"/>
+        <converters:ColorToBrushConverter x:Key="ColorToBrush"/>
 
         <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
         </Style>
         <Style TargetType="Button">
-            <Setter Property="Background" Value="#3a3a5c"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
-            <Setter Property="BorderBrush" Value="#555577"/>
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
             <Setter Property="Padding" Value="16,6"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -30,14 +96,14 @@
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="1" CornerRadius="4"
+                                BorderThickness="1" CornerRadius="6"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#4a4a6c"/>
+                                <Setter Property="Background" Value="#3f3f46"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5"/>
@@ -51,7 +117,7 @@
         <!-- Delete ✕ button -->
         <Style x:Key="DeleteXButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#cc4444"/>
+            <Setter Property="Foreground" Value="#dc2626"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -66,7 +132,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#ff6666"/>
+                                <Setter Property="Foreground" Value="#f87171"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -75,26 +141,26 @@
         </Style>
 
         <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="#252540"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
-            <Setter Property="BorderBrush" Value="#333355"/>
-            <Setter Property="RowBackground" Value="#252540"/>
-            <Setter Property="AlternatingRowBackground" Value="#2a2a48"/>
+            <Setter Property="Background" Value="#18181b"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
+            <Setter Property="BorderBrush" Value="#27272a"/>
+            <Setter Property="RowBackground" Value="#18181b"/>
+            <Setter Property="AlternatingRowBackground" Value="#1f1f23"/>
             <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#333355"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#27272a"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#2e2e50"/>
-            <Setter Property="Foreground" Value="#c0c0dd"/>
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#d4d4d8"/>
             <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="BorderBrush" Value="#444466"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style TargetType="DataGridCell">
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridCell">
@@ -104,7 +170,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#3a3a5c"/>
+                                <Setter Property="Background" Value="#27272a"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -115,18 +181,98 @@
             <Setter Property="Height" Value="36"/>
         </Style>
         <Style TargetType="ListBox">
-            <Setter Property="Background" Value="#252540"/>
-            <Setter Property="BorderBrush" Value="#333355"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="Background" Value="#18181b"/>
+            <Setter Property="BorderBrush" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
         </Style>
         <Style TargetType="ListBoxItem">
             <Setter Property="Padding" Value="8,6"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#3a3a5c"/>
+                    <Setter Property="Background" Value="#27272a"/>
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#30304c"/>
+                    <Setter Property="Background" Value="#3f3f46"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="MinWidth" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False" Opacity="0"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBorder" Background="#3f3f46" CornerRadius="3" Margin="1,0"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#52525b"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#71717a"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False" Opacity="0"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Height" Value="6"/>
+                    <Setter Property="MinHeight" Value="6"/>
+                    <Setter Property="Width" Value="Auto"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ScrollBar">
+                                <Border Background="Transparent">
+                                    <Track x:Name="PART_Track">
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageLeftCommand" Focusable="False" Opacity="0"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb>
+                                                <Thumb.Template>
+                                                    <ControlTemplate TargetType="Thumb">
+                                                        <Border x:Name="ThumbBorder" Background="#3f3f46" CornerRadius="3" Margin="0,1"/>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#52525b"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsDragging" Value="True">
+                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#71717a"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Thumb.Template>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageRightCommand" Focusable="False" Opacity="0"/>
+                                        </Track.IncreaseRepeatButton>
+                                    </Track>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -134,27 +280,45 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <!-- Title bar -->
             <RowDefinition Height="Auto"/>
             <!-- Toolbar -->
             <RowDefinition Height="Auto"/>
             <!-- Update banner -->
             <RowDefinition Height="Auto"/>
             <!-- Summary -->
+            <RowDefinition Height="200"/>
+            <!-- Chart banner -->
             <RowDefinition Height="*"/>
             <!-- Content -->
             <RowDefinition Height="Auto"/>
             <!-- Status -->
         </Grid.RowDefinitions>
 
-        <!-- ═══ Row 0 — Toolbar ═══ -->
-        <Border Background="#252540" Padding="12,8"
-                BorderBrush="#333355" BorderThickness="0,0,0,1">
+        <!-- ═══ Row 0 — Title bar ═══ -->
+        <Border Background="#111113">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="📄 Export" Command="{Binding ExportCsvCommand}"
-                            FontSize="13" Margin="0,0,6,0"
-                            ToolTip="Export current view to CSV"/>
-                    <Button Content="🔄 Refresh" Command="{Binding RefreshCommand}"
+                    <Button Content="─" Style="{StaticResource TitleBarButton}"
+                            Click="MinimizeButton_Click" ToolTip="Minimize"/>
+                    <Button Content="□"
+                            Style="{StaticResource TitleBarButton}"
+                            Click="MaximizeButton_Click" ToolTip="Maximize"/>
+                    <Button Content="✕" Style="{StaticResource TitleBarCloseButton}"
+                            Click="CloseButton_Click" ToolTip="Close"/>
+                </StackPanel>
+                <TextBlock Text="Local Wealth Tracker" VerticalAlignment="Center"
+                           Margin="12,0" FontSize="12" Foreground="#52525b"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ═══ Row 1 — Toolbar ═══ -->
+        <Border Grid.Row="1" Background="#18181b" Padding="12,8"
+                BorderBrush="#27272a" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+<Button Content="🔄 Refresh" Command="{Binding RefreshCommand}"
                             FontSize="14" Margin="0,0,6,0"
                             ToolTip="Fetch stash items and update prices"/>
                     <Button Content="⏹ Cancel" Command="{Binding RefreshCancelCommand}"
@@ -163,37 +327,37 @@
                             FontSize="14"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock FontSize="13" Foreground="#888" Margin="0,0,16,0">
+                    <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,16,0">
                         <Run Text="League: "/>
-                        <Run Text="{Binding LeagueDisplay}" Foreground="#c0c0dd"
+                        <Run Text="{Binding LeagueDisplay}" Foreground="#d4d4d8"
                              FontWeight="SemiBold"/>
                     </TextBlock>
-                    <TextBlock FontSize="13" Foreground="#888" Margin="0,0,16,0">
+                    <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,16,0">
                         <Run Text="Synced tabs: "/>
-                        <Run Text="{Binding SyncedTabCount}" Foreground="#c0c0dd"
+                        <Run Text="{Binding SyncedTabCount}" Foreground="#d4d4d8"
                              FontWeight="SemiBold"/>
                     </TextBlock>
-                    <TextBlock FontSize="13" Foreground="#666"
+                    <TextBlock FontSize="13" Foreground="#52525b"
                                ToolTip="Items in your stash that couldn't be matched to a poe.ninja price">
                         <Run Text="Unpriced: "/>
-                        <Run Text="{Binding UnpricedCount}" Foreground="#888"/>
+                        <Run Text="{Binding UnpricedCount}" Foreground="#71717a"/>
                     </TextBlock>
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- ═══ Row 1 — Update Banner (only visible when update available) ═══ -->
-        <Border Grid.Row="1" Padding="12,8"
+        <!-- ═══ Row 2 — Update Banner (only visible when update available) ═══ -->
+        <Border Grid.Row="2" Padding="12,8"
         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Background" Value="#2a3a2a"/>
-                    <Setter Property="BorderBrush" Value="#4ade80"/>
+                    <Setter Property="Background" Value="#052e16"/>
+                    <Setter Property="BorderBrush" Value="#22c55e"/>
                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                            <Setter Property="Background" Value="#2a2a3a"/>
-                            <Setter Property="BorderBrush" Value="#f1c40f"/>
+                            <Setter Property="Background" Value="#1c1917"/>
+                            <Setter Property="BorderBrush" Value="#f59e0b"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -207,13 +371,13 @@
                     <!-- Progress bar (visible during download) -->
                     <ProgressBar Value="{Binding UpdateProgress}"
                          Maximum="100" Width="120" Height="14"
-                         Background="#333355" Foreground="#4ade80"
+                         Background="#27272a" Foreground="#22c55e"
                          Margin="0,0,8,0"
                          Visibility="{Binding IsUpdating, Converter={StaticResource BoolToVis}}"/>
 
                     <!-- Download status text -->
                     <TextBlock Text="{Binding UpdateProgressText}"
-                       FontSize="11" Foreground="#888"
+                       FontSize="11" Foreground="#71717a"
                        VerticalAlignment="Center" Margin="0,0,12,0"
                        Visibility="{Binding IsUpdating, Converter={StaticResource BoolToVis}}"/>
 
@@ -240,8 +404,8 @@
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Content" Value="⬇ Update"/>
-                                <Setter Property="Background" Value="#2d5a2d"/>
-                                <Setter Property="BorderBrush" Value="#4ade80"/>
+                                <Setter Property="Background" Value="#14532d"/>
+                                <Setter Property="BorderBrush" Value="#22c55e"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsUpdating}" Value="True">
                                         <Setter Property="IsEnabled" Value="False"/>
@@ -259,7 +423,7 @@
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Background" Value="Transparent"/>
                                 <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Foreground" Value="#666"/>
+                                <Setter Property="Foreground" Value="#52525b"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsUpdating}" Value="True">
                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -274,10 +438,10 @@
                 <TextBlock VerticalAlignment="Center" FontSize="13">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="#4ade80"/>
+                            <Setter Property="Foreground" Value="#22c55e"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                    <Setter Property="Foreground" Value="#f1c40f"/>
+                                    <Setter Property="Foreground" Value="#f59e0b"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -288,43 +452,46 @@
             </DockPanel>
         </Border>
 
-        <!-- ═══ Row 2 — Summary ═══ -->
-        <Border Grid.Row="2" Background="#2a2a48" Padding="16,10"
-                BorderBrush="#333355" BorderThickness="0,0,0,1">
-            <WrapPanel VerticalAlignment="Center">
-                <TextBlock FontSize="22" FontWeight="Bold" Foreground="#f1c40f"
-                           Margin="0,0,24,0"
+        <!-- ═══ Row 3 — Summary ═══ -->
+        <Border Grid.Row="3" Background="#1f1f23" Padding="16,10"
+                BorderBrush="#27272a" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock FontSize="22" FontWeight="Bold" Foreground="#b45309"
+                           Margin="0,0,24,0" VerticalAlignment="Center"
                            ToolTip="Total wealth across all synced tabs">
                     <Run Text="{Binding TotalDivine, StringFormat='{}{0:N1}'}"/>
-                    <Run Text=" divine" FontSize="14" Foreground="#c0a030"/>
+                    <Run Text=" divine" FontSize="14" Foreground="#b45309"/>
                 </TextBlock>
-                <TextBlock FontSize="16" Foreground="#aaa" Margin="0,0,24,0"
-                           ToolTip="Same value expressed in chaos orbs">
-                    <Run Text="("/>
-                    <Run Text="{Binding TotalChaos, StringFormat='{}{0:N0}'}"/>
-                    <Run Text=" chaos)"/>
-                </TextBlock>
-                <TextBlock FontSize="13" Foreground="#888" Margin="0,0,24,0"
+                <TextBlock FontSize="13" Foreground="#71717a" Margin="0,0,24,0"
+                           VerticalAlignment="Center"
                            ToolTip="Current divine/chaos exchange rate from poe.ninja">
                     <Run Text="1 Divine = "/>
                     <Run Text="{Binding DivinePrice, StringFormat='{}{0:N0}'}"/>
                     <Run Text="c"/>
                 </TextBlock>
-                <TextBlock FontSize="13" Foreground="#888" Margin="0,0,24,0"
-                           ToolTip="Number of items in the poe.ninja price database">
-                    <Run Text="Prices: "/>
-                    <Run Text="{Binding PriceEntries, StringFormat='{}{0:N0}'}"/>
-                </TextBlock>
-                <TextBlock FontSize="13" Foreground="#888"
+                <TextBlock FontSize="13" Foreground="#71717a"
+                           VerticalAlignment="Center"
                            ToolTip="Time of last successful refresh">
                     <Run Text="Last: "/>
                     <Run Text="{Binding LastRefresh}"/>
                 </TextBlock>
-            </WrapPanel>
+            </StackPanel>
         </Border>
 
-        <!-- ═══ Row 3 — Main content ═══ -->
-        <Grid Grid.Row="3">
+        <!-- ═══ Row 4 — Wealth Chart Banner ═══ -->
+        <Border Grid.Row="4" Background="#18181b" Padding="12,8"
+                BorderBrush="#27272a" BorderThickness="0,0,0,1">
+            <lvc:CartesianChart
+                Series="{Binding ChartSeries}"
+                XAxes="{Binding ChartXAxes}"
+                YAxes="{Binding ChartYAxes}"
+                TooltipPosition="Hidden"
+                LegendPosition="Hidden"
+                AnimationsSpeed="00:00:00.300"/>
+        </Border>
+
+        <!-- ═══ Row 5 — Main content ═══ -->
+        <Grid Grid.Row="5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300" MinWidth="200"/>
                 <ColumnDefinition Width="Auto"/>
@@ -336,7 +503,7 @@
             <!-- Left: Stash tabs + Unpriced -->
             <DockPanel Margin="4">
                 <TextBlock DockPanel.Dock="Top" Text="STASH TABS"
-               FontWeight="Bold" FontSize="12" Foreground="#888"
+               FontWeight="Bold" FontSize="12" Foreground="#71717a"
                Margin="6,6,0,6"/>
 
                 <!-- Unpriced items button — only visible when there are unpriced items -->
@@ -348,7 +515,7 @@
                 Padding="8,6">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
-                                <Border Background="#2a2030" BorderBrush="#553355"
+                                <Border Background="#18080e" BorderBrush="#4a1d4a"
                             BorderThickness="1" CornerRadius="4"
                             Padding="8,6" Cursor="Hand">
                                     <DockPanel>
@@ -360,7 +527,7 @@
                                             <TextBlock Text="⚠ Unpriced Items" FontWeight="SemiBold"
                                            Foreground="#ef4444"
                                            TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock FontSize="11" Foreground="#886666"
+                                            <TextBlock FontSize="11" Foreground="#78524e"
                                            TextTrimming="CharacterEllipsis">
                                     <Run Text="Items not found on poe.ninja"/>
                                             </TextBlock>
@@ -377,36 +544,40 @@
                     </Button>
                 </Border>
 
-                <ListBox ItemsSource="{Binding Tabs}"
-             SelectedItem="{Binding SelectedTab}"
-             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox x:Name="TabsList"
+                         ItemsSource="{Binding Tabs}"
+                         SelectedItem="{Binding SelectedTab}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         AllowDrop="True"
+                         PreviewMouseLeftButtonDown="TabsList_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="TabsList_PreviewMouseMove"
+                         DragOver="TabsList_DragOver"
+                         Drop="TabsList_Drop">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <DockPanel>
-                                <Border DockPanel.Dock="Left" Width="8" Height="8"
-                            CornerRadius="4" Margin="0,0,8,0">
-                                    <Border.Background>
-                                        <SolidColorBrush Color="{Binding Color}"/>
-                                    </Border.Background>
-                                </Border>
-                                <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding TotalDivine, StringFormat='{}{0:N1}d'}"
-                               Foreground="#f1c40f" FontWeight="SemiBold"
-                               VerticalAlignment="Center" Margin="4,0,0,0"/>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding Summary}" FontSize="11"
-                                   Foreground="#888"
-                                   TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </DockPanel>
+                            <Border Margin="-8,-6,-8,-6" Padding="8,6"
+                                    BorderThickness="3,0,0,0"
+                                    BorderBrush="{Binding Color, Converter={StaticResource ColorToBrush}}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{Binding TotalDivine, StringFormat='{}{0:N1}d'}"
+                                               Foreground="#f59e0b" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                   Foreground="#71717a"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
             </DockPanel>
 
-            <GridSplitter Grid.Column="1" Width="4" Background="#333355"/>
+            <GridSplitter Grid.Column="1" Width="4" Background="#27272a"/>
 
             <!-- Center: Items (zoomable + searchable) -->
             <DockPanel Grid.Column="2" Margin="4">
@@ -415,10 +586,10 @@
                 <DockPanel DockPanel.Dock="Top" Margin="6,6,6,4">
                     <TextBlock x:Name="ZoomLabel"
                    DockPanel.Dock="Right" HorizontalAlignment="Right"
-                   FontSize="11" Foreground="#666"
+                   FontSize="11" Foreground="#52525b"
                    VerticalAlignment="Center"
                    Text="100%" Margin="8,0,0,0"/>
-                    <TextBlock FontWeight="Bold" FontSize="12" Foreground="#888"
+                    <TextBlock FontWeight="Bold" FontSize="12" Foreground="#71717a"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis">
             <Run Text="ITEMS — "/>
@@ -427,8 +598,8 @@
                 </DockPanel>
 
                 <!-- Search bar -->
-                <Border DockPanel.Dock="Top" Background="#2a2a3e"
-            BorderBrush="#444466" BorderThickness="1"
+                <Border DockPanel.Dock="Top" Background="#1f1f23"
+            BorderBrush="#3f3f46" BorderThickness="1"
             CornerRadius="4" Margin="6,0,6,6"
             Padding="4,0">
                     <DockPanel>
@@ -441,7 +612,7 @@
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="#888"/>
+                                    <Setter Property="Foreground" Value="#71717a"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="Template">
@@ -453,7 +624,7 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Foreground" Value="#cc4444"/>
+                                                        <Setter Property="Foreground" Value="#dc2626"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -465,18 +636,18 @@
 
                         <TextBlock DockPanel.Dock="Right"
                        Text="{Binding ItemCountText}"
-                       FontSize="11" Foreground="#666"
+                       FontSize="11" Foreground="#52525b"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0"/>
 
                         <TextBlock DockPanel.Dock="Left"
                        Text="🔍" FontSize="12"
                        VerticalAlignment="Center"
-                       Margin="4,0,6,0" Foreground="#666"/>
+                       Margin="4,0,6,0" Foreground="#52525b"/>
 
                         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Background="Transparent"
-                     Foreground="#e0e0e0"
+                     Foreground="#f4f4f5"
                      BorderThickness="0"
                      FontSize="13"
                      VerticalAlignment="Center"
@@ -527,11 +698,21 @@
                                             <TextBlock Text="{Binding Name}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"
-                                           Foreground="#e0e0e0"/>
+                                           Foreground="#f4f4f5"/>
                                         </DockPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="Tab"
+                                    Binding="{Binding TabName}" Width="80">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="#71717a"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
 
                             <DataGridTemplateColumn Header="7d" Width="110"
                                         CanUserSort="True"
@@ -549,7 +730,7 @@
                                               StrokeLineJoin="Round">
                                                     <Polyline.Style>
                                                         <Style TargetType="Polyline">
-                                                            <Setter Property="Stroke" Value="#4ade80"/>
+                                                            <Setter Property="Stroke" Value="#22c55e"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsSparklineUp}"
                                                                  Value="False">
@@ -566,7 +747,7 @@
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Text" Value="{Binding SparklineText}"/>
-                                                        <Setter Property="Foreground" Value="#4ade80"/>
+                                                        <Setter Property="Foreground" Value="#22c55e"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsSparklineUp}"
                                                              Value="False">
@@ -590,7 +771,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#e0e0e0"/>
+                                        <Setter Property="Foreground" Value="#f4f4f5"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -601,7 +782,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#e0e0e0"/>
+                                        <Setter Property="Foreground" Value="#f4f4f5"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -612,7 +793,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#f1c40f"/>
+                                        <Setter Property="Foreground" Value="#f59e0b"/>
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
@@ -624,7 +805,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#c0a030"/>
+                                        <Setter Property="Foreground" Value="#b45309"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -665,7 +846,7 @@
                                             <TextBlock Text="{Binding Name}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"
-                                           Foreground="#e0e0e0"/>
+                                           Foreground="#f4f4f5"/>
                                         </DockPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -676,7 +857,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#888"/>
+                                        <Setter Property="Foreground" Value="#71717a"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -686,7 +867,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#888"/>
+                                        <Setter Property="Foreground" Value="#71717a"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -696,7 +877,7 @@
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Foreground" Value="#e0e0e0"/>
+                                        <Setter Property="Foreground" Value="#f4f4f5"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -705,9 +886,9 @@
                 </Grid>
             </DockPanel>
             
-            <GridSplitter Grid.Column="3" Width="4" Background="#333355"/>
+            <GridSplitter Grid.Column="3" Width="4" Background="#27272a"/>
 
-            <!-- Right: Chart + History -->
+            <!-- Right: History -->
             <DockPanel Grid.Column="4" Margin="4">
 
                 <DockPanel DockPanel.Dock="Top" Margin="6,6,6,6">
@@ -716,21 +897,9 @@
                             Padding="8,3" FontSize="11"
                             HorizontalAlignment="Right"/>
                     <TextBlock Text="WEALTH HISTORY"
-                               FontWeight="Bold" FontSize="12" Foreground="#888"
+                               FontWeight="Bold" FontSize="12" Foreground="#71717a"
                                VerticalAlignment="Center"/>
                 </DockPanel>
-
-                <Border DockPanel.Dock="Top" Background="#252540"
-                        BorderBrush="#333355" BorderThickness="1"
-                        CornerRadius="4" Height="200" Margin="0,0,0,8">
-                    <lvc:CartesianChart
-                        Series="{Binding ChartSeries}"
-                        XAxes="{Binding ChartXAxes}"
-                        YAxes="{Binding ChartYAxes}"
-                        TooltipPosition="Hidden"
-                        LegendPosition="Hidden"
-                        AnimationsSpeed="00:00:00.300"/>
-                </Border>
 
                 <ListBox ItemsSource="{Binding History}"
                          SelectedItem="{Binding SelectedSnapshot}"
@@ -756,7 +925,7 @@
                                            Margin="6,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="#4ade80"/>
+                                            <Setter Property="Foreground" Value="#22c55e"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsUp}"
                                                              Value="False">
@@ -786,21 +955,21 @@
             </DockPanel>
         </Grid>
 
-        <!-- ═══ Row 4 — Status bar ═══ -->
-        <Border Grid.Row="4" Background="#1a1a2a" Padding="12,6"
-        BorderBrush="#333355" BorderThickness="0,1,0,0">
+        <!-- ═══ Row 6 — Status bar ═══ -->
+        <Border Grid.Row="6" Background="#09090b" Padding="12,6"
+        BorderBrush="#27272a" BorderThickness="0,1,0,0">
             <Grid>
                 <TextBlock Text="{Binding StatusText}" FontSize="12"
-                   Foreground="#aaa"/>
+                   Foreground="#a1a1aa"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                     VerticalAlignment="Center">
                     <TextBlock Text="{Binding CurrentVersion}"
-                       FontSize="11" Foreground="#555"
+                       FontSize="11" Foreground="#52525b"
                        Margin="0,0,12,0"/>
                     <ProgressBar IsIndeterminate="{Binding IsBusy}"
                          Width="120" Height="4"
-                         Background="#333355" Foreground="#f1c40f"
+                         Background="#27272a" Foreground="#f59e0b"
                          />
                 </StackPanel>
             </Grid>
