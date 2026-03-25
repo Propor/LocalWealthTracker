@@ -498,7 +498,7 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Foreground" Value="#4ade80"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasSessionProfit}" Value="False">
+                                        <DataTrigger Binding="{Binding IsSessionPositive}" Value="False">
                                             <Setter Property="Foreground" Value="#ef4444"/>
                                         </DataTrigger>
                                     </Style.Triggers>

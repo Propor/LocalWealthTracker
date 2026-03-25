@@ -48,6 +48,68 @@ public partial class MainWindow : Window
         => WindowState = WindowState == WindowState.Maximized
             ? WindowState.Normal : WindowState.Maximized;
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var source = System.Windows.Interop.HwndSource.FromHwnd(
+            new System.Windows.Interop.WindowInteropHelper(this).Handle);
+        source?.AddHook(WndProc);
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int WM_GETMINMAXINFO = 0x0024;
+        if (msg == WM_GETMINMAXINFO)
+        {
+            ApplyMaximizeBounds(hwnd, lParam);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32")]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, MonitorInfo lpmi);
+
+    [System.Runtime.InteropServices.DllImport("user32")]
+    private static extern IntPtr MonitorFromWindow(IntPtr handle, uint flags);
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativePoint { public int x, y; }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativeRect { public int Left, Top, Right, Bottom; }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public NativePoint ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    private class MonitorInfo
+    {
+        public int cbSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(MonitorInfo));
+        public NativeRect rcMonitor, rcWork;
+        public int dwFlags;
+    }
+
+    private static void ApplyMaximizeBounds(IntPtr hwnd, IntPtr lParam)
+    {
+        var mmi = System.Runtime.InteropServices.Marshal.PtrToStructure<MinMaxInfo>(lParam);
+        var monitor = MonitorFromWindow(hwnd, 0x00000002);
+        if (monitor != IntPtr.Zero)
+        {
+            var info = new MonitorInfo();
+            GetMonitorInfo(monitor, info);
+            mmi.ptMaxPosition.x = info.rcWork.Left - info.rcMonitor.Left;
+            mmi.ptMaxPosition.y = info.rcWork.Top  - info.rcMonitor.Top;
+            mmi.ptMaxSize.x     = info.rcWork.Right  - info.rcWork.Left;
+            mmi.ptMaxSize.y     = info.rcWork.Bottom - info.rcWork.Top;
+            mmi.ptMaxTrackSize  = mmi.ptMaxSize;
+        }
+        System.Runtime.InteropServices.Marshal.StructureToPtr(mmi, lParam, true);
+    }
+
     private void CloseButton_Click(object sender, RoutedEventArgs e)
         => Close();
 

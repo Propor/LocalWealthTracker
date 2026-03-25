@@ -73,6 +73,7 @@ public partial class MainViewModel : ObservableObject
     // ── Session profit ───────────────────────────────────────────
     [ObservableProperty] private string _sessionProfitText = "";
     [ObservableProperty] private bool _hasSessionProfit;
+    [ObservableProperty] private bool _isSessionPositive = true;
     private double _sessionStartDivine;
     private bool _sessionStartSet;
 
@@ -649,6 +650,7 @@ public partial class MainViewModel : ObservableObject
         if (!_sessionStartSet || TotalDivine <= 0) return;
         double profit = TotalDivine - _sessionStartDivine;
         HasSessionProfit = true;
+        IsSessionPositive = profit >= 0;
         SessionProfitText = profit >= 0
             ? $"+{profit:N1} div this session"
             : $"{profit:N1} div this session";
