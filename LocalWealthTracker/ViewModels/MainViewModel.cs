@@ -528,7 +528,7 @@ public partial class MainViewModel : ObservableObject
             t => t.Index,
             t => Color.FromRgb((byte)t.ColorR, (byte)t.ColorG, (byte)t.ColorB));
 
-        var snapshotTabs = snapshot.Items
+        var unsortedTabs = snapshot.Items
             .GroupBy(i => i.TabIndex)
             .Select(g =>
             {
@@ -547,8 +547,18 @@ public partial class MainViewModel : ObservableObject
                     ItemCount = items.Count
                 };
             })
-            .OrderByDescending(t => t.TotalDivine)
             .ToList();
+
+        var snapshotTabs = settings.TabOrder.Count > 0
+            ? unsortedTabs
+                .OrderBy(t =>
+                {
+                    int i = settings.TabOrder.IndexOf(t.Name);
+                    return i >= 0 ? i : int.MaxValue;
+                })
+                .ThenByDescending(t => t.TotalDivine)
+                .ToList()
+            : unsortedTabs.OrderByDescending(t => t.TotalDivine).ToList();
 
         double grandTotal = snapshot.Items.Sum(i => i.TotalPriceChaos);
         double dp = snapshot.Items.FirstOrDefault()?.DivinePrice ?? 1;

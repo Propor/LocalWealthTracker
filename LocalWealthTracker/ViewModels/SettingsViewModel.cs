@@ -138,12 +138,14 @@ public partial class SettingsViewModel : ObservableObject
             HasStoredCredential = true;
         }
 
+        var existing = _data.LoadSettings();
         _data.SaveSettings(new AppSettings
         {
             League = League,
             MinItemValueChaos = MinItemValue,
             AutoRefreshMinutes = AutoRefreshMinutes,
             PriceCacheMinutes = PriceCacheMinutes,
+            TabOrder = existing.TabOrder,
             Tabs = Tabs.Select(t => new SavedTab
             {
                 Index = t.Index,
