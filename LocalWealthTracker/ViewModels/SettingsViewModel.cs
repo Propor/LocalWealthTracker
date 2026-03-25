@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _hasStoredCredential;
     [ObservableProperty] private int _priceCacheMinutes;
+    [ObservableProperty] private double _divineGoal;
 
 
     public ObservableCollection<SelectableTab> Tabs { get; } = [];
@@ -138,12 +139,15 @@ public partial class SettingsViewModel : ObservableObject
             HasStoredCredential = true;
         }
 
+        var existing = _data.LoadSettings();
         _data.SaveSettings(new AppSettings
         {
             League = League,
             MinItemValueChaos = MinItemValue,
             AutoRefreshMinutes = AutoRefreshMinutes,
             PriceCacheMinutes = PriceCacheMinutes,
+            DivineGoal = DivineGoal,
+            TabOrder = existing.TabOrder,
             Tabs = Tabs.Select(t => new SavedTab
             {
                 Index = t.Index,
@@ -173,6 +177,7 @@ public partial class SettingsViewModel : ObservableObject
         MinItemValue = s.MinItemValueChaos;
         AutoRefreshMinutes = s.AutoRefreshMinutes;
         PriceCacheMinutes = s.PriceCacheMinutes;
+        DivineGoal = s.DivineGoal;
 
         Tabs.Clear();
         foreach (var saved in s.Tabs)

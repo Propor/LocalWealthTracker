@@ -106,7 +106,13 @@ public sealed class PriceService
                 foreach (var coreItem in response.Core.Items)
                 {
                     if (coreItem.Name.Equals("Divine Orb", StringComparison.OrdinalIgnoreCase))
-                        _prices["Divine Orb"] = new PriceEntry(DivinePrice, null, 0);
+                    {
+                        var existing = _prices.TryGetValue("Divine Orb", out var prev) ? prev : null;
+                        _prices["Divine Orb"] = new PriceEntry(
+                            DivinePrice,
+                            existing?.SparklineData,
+                            existing?.TotalChange ?? 0);
+                    }
                 }
             }
 

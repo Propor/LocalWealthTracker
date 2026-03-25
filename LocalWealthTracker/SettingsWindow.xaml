@@ -5,32 +5,96 @@
         Width="600" Height="720"
         MinWidth="450" MinHeight="500"
         WindowStartupLocation="CenterOwner"
-        Background="#1e1e2e" Foreground="#e0e0e0"
-        ResizeMode="CanResizeWithGrip">
+        WindowStyle="None" ResizeMode="CanResize"
+        Background="#09090b" Foreground="#f4f4f5">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="5"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
+        <Style x:Key="TitleBarButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#a1a1aa"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#27272a"/>
+                                <Setter Property="Foreground" Value="#f4f4f5"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#3f3f46"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleBarCloseButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#a1a1aa"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#c0392b"/>
+                                <Setter Property="Foreground" Value="#ffffff"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#922b21"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
         </Style>
         <Style TargetType="Label">
-            <Setter Property="Foreground" Value="#a0a0c0"/>
+            <Setter Property="Foreground" Value="#a1a1aa"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#2a2a3e"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
-            <Setter Property="BorderBrush" Value="#444466"/>
+            <Setter Property="Background" Value="#1f1f23"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
         <Style TargetType="Button">
-            <Setter Property="Background" Value="#3a3a5c"/>
-            <Setter Property="Foreground" Value="#e0e0e0"/>
-            <Setter Property="BorderBrush" Value="#555577"/>
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
             <Setter Property="Padding" Value="16,6"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -39,14 +103,14 @@
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="1" CornerRadius="4"
+                                BorderThickness="1" CornerRadius="6"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#4a4a6c"/>
+                                <Setter Property="Background" Value="#3f3f46"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5"/>
@@ -57,12 +121,106 @@
             </Setter>
         </Style>
         <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#e0e0e0"/>
+            <Setter Property="Foreground" Value="#f4f4f5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="MinWidth" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False" Opacity="0"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBorder" Background="#3f3f46" CornerRadius="3" Margin="1,0"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#52525b"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#71717a"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False" Opacity="0"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Height" Value="6"/>
+                    <Setter Property="MinHeight" Value="6"/>
+                    <Setter Property="Width" Value="Auto"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ScrollBar">
+                                <Border Background="Transparent">
+                                    <Track x:Name="PART_Track">
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageLeftCommand" Focusable="False" Opacity="0"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb>
+                                                <Thumb.Template>
+                                                    <ControlTemplate TargetType="Thumb">
+                                                        <Border x:Name="ThumbBorder" Background="#3f3f46" CornerRadius="3" Margin="0,1"/>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#52525b"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsDragging" Value="True">
+                                                                <Setter TargetName="ThumbBorder" Property="Background" Value="#71717a"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Thumb.Template>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageRightCommand" Focusable="False" Opacity="0"/>
+                                        </Track.IncreaseRepeatButton>
+                                    </Track>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <DockPanel>
+
+        <!-- Title bar -->
+        <Border DockPanel.Dock="Top" Background="#111113" Height="32">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="✕" Style="{StaticResource TitleBarCloseButton}"
+                            Click="TitleBarClose_Click" ToolTip="Close"/>
+                </StackPanel>
+                <TextBlock Text="Settings" VerticalAlignment="Center"
+                           Margin="12,0" FontSize="12" Foreground="#52525b"/>
+            </DockPanel>
+        </Border>
+
+        <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -74,7 +232,7 @@
         <!-- ═══ Row 0 — Connection ═══ -->
         <StackPanel Margin="0,0,0,16">
             <TextBlock Text="CONNECTION" FontWeight="Bold" FontSize="12"
-                       Foreground="#888" Margin="0,0,0,8"/>
+                       Foreground="#71717a" Margin="0,0,0,8"/>
 
             <Label Content="POESESSID:" Margin="0,0,0,2"/>
             <DockPanel Margin="0,0,0,4">
@@ -84,25 +242,25 @@
                         ToolTip="Delete stored POESESSID from disk"/>
                 <PasswordBox x:Name="SessionBox"
                              PasswordChanged="SessionBox_PasswordChanged"
-                             Background="#2a2a3e" Foreground="#e0e0e0"
-                             BorderBrush="#444466" Padding="6,4" FontSize="13"/>
+                             Background="#1f1f23" Foreground="#f4f4f5"
+                             BorderBrush="#3f3f46" Padding="6,4" FontSize="13"/>
             </DockPanel>
 
             <!-- Security info -->
-            <Border Background="#2a2a3e" CornerRadius="4" Padding="10,8"
-                    Margin="0,0,0,10" BorderBrush="#444466" BorderThickness="1">
+            <Border Background="#1f1f23" CornerRadius="4" Padding="10,8"
+                    Margin="0,0,0,10" BorderBrush="#3f3f46" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock FontSize="11" Foreground="#888" TextWrapping="Wrap">
+                    <TextBlock FontSize="11" Foreground="#71717a" TextWrapping="Wrap">
                         <Run Text="🔒" FontSize="13"/>
                         <Run Text=" Your POESESSID is encrypted with Windows DPAPI and stored in"/>
-                        <Run Text=" session.bin" FontWeight="SemiBold" Foreground="#aaa"/>
+                        <Run Text=" session.bin" FontWeight="SemiBold" Foreground="#a1a1aa"/>
                         <Run Text=". Only your Windows user on this machine can decrypt it."/>
                         <Run Text=" It is NEVER sent anywhere except pathofexile.com."/>
                     </TextBlock>
                     <TextBlock FontSize="11" Margin="0,4,0,0"
                                Visibility="{Binding HasStoredCredential, Converter={StaticResource BoolToVis}}">
-                        <Run Text="✅ " Foreground="#4ade80"/>
-                        <Run Text="Encrypted credential stored." Foreground="#4ade80"/>
+                        <Run Text="✅ " Foreground="#22c55e"/>
+                        <Run Text="Encrypted credential stored." Foreground="#22c55e"/>
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -115,7 +273,7 @@
         <!-- ═══ Row 1 — General ═══ -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="GENERAL" FontWeight="Bold" FontSize="12"
-               Foreground="#888" Margin="0,0,0,8"/>
+               Foreground="#71717a" Margin="0,0,0,8"/>
             <WrapPanel>
                 <StackPanel Margin="0,0,24,0">
                     <Label Content="Min item value (chaos):" Margin="0,0,0,2"/>
@@ -133,13 +291,19 @@
                      Width="80" HorizontalAlignment="Left"
                      ToolTip="How long to reuse cached prices before fetching fresh ones from poe.ninja. Default: 10 min."/>
                 </StackPanel>
+                <StackPanel Margin="24,0,0,0">
+                    <Label Content="Divine goal (0 = off):" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding DivineGoal, UpdateSourceTrigger=PropertyChanged}"
+                     Width="80" HorizontalAlignment="Left"
+                     ToolTip="Set a divine target — a progress bar appears in the main window summary bar."/>
+                </StackPanel>
             </WrapPanel>
         </StackPanel>
 
         <!-- ═══ Row 2 — Stash tab header ═══ -->
         <DockPanel Grid.Row="2" Margin="0,0,0,8">
             <TextBlock DockPanel.Dock="Left" Text="STASH TABS"
-                       FontWeight="Bold" FontSize="12" Foreground="#888"
+                       FontWeight="Bold" FontSize="12" Foreground="#71717a"
                        VerticalAlignment="Center"/>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                         HorizontalAlignment="Right">
@@ -153,14 +317,14 @@
         </DockPanel>
 
         <!-- ═══ Row 3 — Stash tab list ═══ -->
-        <Border Grid.Row="3" Background="#252540" BorderBrush="#333355"
-                BorderThickness="1" CornerRadius="4" Margin="0,0,0,12">
+        <Border Grid.Row="3" Background="#18181b" BorderBrush="#27272a"
+                BorderThickness="1" CornerRadius="6" Margin="0,0,0,12">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Tabs}" Margin="4">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Padding="8,6" Margin="0,1"
-                                    CornerRadius="3" Background="#2a2a48">
+                                    CornerRadius="3" Background="#1f1f23">
                                 <DockPanel>
                                     <CheckBox DockPanel.Dock="Left"
                                               IsChecked="{Binding IsSynced}"
@@ -177,7 +341,7 @@
                                     </Border>
                                     <TextBlock DockPanel.Dock="Right"
                                                Text="{Binding Type}"
-                                               Foreground="#666" FontSize="11"
+                                               Foreground="#52525b" FontSize="11"
                                                VerticalAlignment="Center"
                                                Margin="8,0,0,0"/>
                                     <TextBlock Text="{Binding Name}" FontSize="13"
@@ -201,13 +365,15 @@
                         FontSize="14"/>
             </StackPanel>
             <TextBlock Text="{Binding StatusText}" FontSize="12"
-                       Foreground="#aaa" VerticalAlignment="Center"
+                       Foreground="#a1a1aa" VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
             <ProgressBar IsIndeterminate="{Binding IsBusy}"
                          Width="100" Height="4"
-                         Background="#333355" Foreground="#f1c40f"
+                         Background="#27272a" Foreground="#f59e0b"
                          VerticalAlignment="Center"
                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
         </DockPanel>
     </Grid>
+
+    </DockPanel>
 </Window>

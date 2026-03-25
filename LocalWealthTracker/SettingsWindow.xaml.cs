@@ -32,4 +32,10 @@ public partial class SettingsWindow : Window
         DialogResult = true;
         Close();
     }
+
+    private void TitleBarClose_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = true;
+        Close();
+    }
 }
