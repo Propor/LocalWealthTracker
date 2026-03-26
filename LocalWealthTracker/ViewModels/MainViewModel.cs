@@ -34,6 +34,8 @@ public partial class MainViewModel : ObservableObject
     private string _statusText =
         "Open Settings to configure, then click Refresh.";
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private int _refreshProgress;
+    [ObservableProperty] private int _refreshTotal = 1;
     [ObservableProperty] private double _totalChaos;
     [ObservableProperty] private double _totalDivine;
     [ObservableProperty] private double _divinePrice;
@@ -351,6 +353,8 @@ public partial class MainViewModel : ObservableObject
         }
 
         IsBusy = true;
+        RefreshProgress = 0;
+        RefreshTotal = 1 + syncedTabs.Count;
         var league = settings.League.Trim();
 
         try
@@ -370,13 +374,21 @@ public partial class MainViewModel : ObservableObject
 
             DivinePrice = _prices.DivinePrice;
             PriceEntries = _prices.EntryCount;
+            RefreshProgress = 1;
 
             // 2 ── Fetch all synced tabs in parallel
             _stash.SetSessionId(sessionId);
             StatusText = $"Loading {syncedTabs.Count} tabs…";
+            foreach (var tab in _liveTabs)
+                tab.IsRefreshing = true;
 
             var tabIndices = syncedTabs.Select(t => t.Index).ToList();
-            var tabProgress = new Progress<string>(s => StatusText = s);
+            int tabsDone = 0;
+            var tabProgress = new Progress<string>(s =>
+            {
+                StatusText = s;
+                RefreshProgress = 1 + ++tabsDone;
+            });
 
             var results = await _stash.GetMultipleTabsAsync(
                 league, tabIndices, tabProgress, ct);
@@ -459,11 +471,51 @@ public partial class MainViewModel : ObservableObject
                     .ToList()
                 : tabSummaries.OrderByDescending(t => t.TotalDivine).ToList();
 
-            Tabs.Clear();
-            Tabs.Add(allItemsTab);
+            // Merge into existing Tabs list in-place so animations can play per tab
+            var existingByIndex = _liveTabs.ToDictionary(t => t.Index);
+
             foreach (var tab in ordered)
+            {
+                if (existingByIndex.TryGetValue(tab.Index, out var existing))
+                {
+                    existing.TotalChaos  = tab.TotalChaos;
+                    existing.TotalDivine = tab.TotalDivine;
+                    existing.ItemCount   = tab.ItemCount;
+                    existing.Items       = tab.Items;
+                }
+            }
+
+            // Add/remove tabs that appeared or disappeared
+            var newIndices      = ordered.Select(t => t.Index).ToHashSet();
+            var existingIndices = _liveTabs.Select(t => t.Index).ToHashSet();
+
+            foreach (var tab in ordered.Where(t => !existingIndices.Contains(t.Index)))
                 Tabs.Add(tab);
+            foreach (var tab in _liveTabs.Where(t => t.Index >= 0 && !newIndices.Contains(t.Index)).ToList())
+                Tabs.Remove(tab);
+
+            // Refresh the "All Items" aggregate tab
+            var allItemsExisting = _liveTabs.FirstOrDefault(t => t.Index == -1);
+            if (allItemsExisting != null)
+            {
+                allItemsExisting.TotalChaos  = allItemsTab.TotalChaos;
+                allItemsExisting.TotalDivine = allItemsTab.TotalDivine;
+                allItemsExisting.ItemCount   = allItemsTab.ItemCount;
+                allItemsExisting.Items       = allItemsTab.Items;
+            }
+            else
+            {
+                Tabs.Insert(0, allItemsTab);
+            }
+
             _liveTabs = Tabs.ToList();
+
+            // Stagger the flash: clear IsRefreshing one tab at a time
+            foreach (var tab in _liveTabs)
+            {
+                tab.IsRefreshing = false;
+                await Task.Delay(40, ct);
+            }
 
             // 6 ── Totals
             TotalChaos = Math.Round(grandTotal, 0);
@@ -487,7 +539,7 @@ public partial class MainViewModel : ObservableObject
             LoadHistory(league);
 
             // 8 ── Auto-select All Items
-            SelectedTab = allItemsTab;
+            SelectedTab = _liveTabs.FirstOrDefault(t => t.Index == -1);
 
             var cacheNote = _prices.LastLoadedAt.HasValue
                 ? $"  •  Prices from {_prices.LastLoadedAt:HH:mm}"
@@ -511,6 +563,8 @@ public partial class MainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            RefreshProgress = 0;
+            RefreshTotal = 1;
         }
     }
 
@@ -563,6 +617,13 @@ public partial class MainViewModel : ObservableObject
 
     private void BuildSnapshotTabs(WealthSnapshot snapshot)
     {
+        foreach (var item in snapshot.Items)
+        {
+            var (sparkData, sparkTrend) = _prices.GetSparkline(item.Name);
+            item.SparklineData = sparkData;
+            item.SparklineTrend = sparkTrend;
+        }
+
         var settings = _data.LoadSettings();
         var colorMap = settings.Tabs.ToDictionary(
             t => t.Index,
@@ -691,9 +752,9 @@ public partial class MainViewModel : ObservableObject
     // ── Diff ────────────────────────────────────────────────────
 
     [RelayCommand]
-    private void PinSnapshot()
+    private void PinSnapshot(WealthSnapshot snapshot)
     {
-        PinnedSnapshot = SelectedSnapshot;
+        PinnedSnapshot = snapshot;
         PinnedSnapshotId = PinnedSnapshot?.Id ?? "";
         CanShowDiff = PinnedSnapshot != null && SelectedSnapshot != null
                       && PinnedSnapshot.Id != SelectedSnapshot.Id;

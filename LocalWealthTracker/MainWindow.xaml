@@ -596,19 +596,44 @@
                             <Border Margin="-8,-6,-8,-6" Padding="8,6"
                                     BorderThickness="3,0,0,0"
                                     BorderBrush="{Binding Color, Converter={StaticResource ColorToBrush}}">
-                                <DockPanel>
-                                    <TextBlock DockPanel.Dock="Right"
-                                               Text="{Binding TotalDivine, StringFormat='{}{0:N1}d'}"
-                                               Foreground="#f59e0b" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" Margin="4,0,0,0"/>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Summary}" FontSize="11"
-                                                   Foreground="#71717a"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
-                                </DockPanel>
+                                <Grid>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Text="{Binding TotalDivine, StringFormat='{}{0:N1}d'}"
+                                                   Foreground="#f59e0b" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                       Foreground="#71717a"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <!-- Flash overlay: fades out when IsRefreshing transitions to false -->
+                                    <Border IsHitTestVisible="False" Opacity="0"
+                                            Background="#e4e4e7" CornerRadius="0">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Opacity" Value="0"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRefreshing}" Value="False">
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation
+                                                                        Storyboard.TargetProperty="Opacity"
+                                                                        From="0.25" To="0"
+                                                                        Duration="0:0:0.5"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -1081,7 +1106,8 @@
                                         Foreground="#a1a1aa" Cursor="Hand"
                                         ToolTip="Pin as diff baseline"
                                         Command="{Binding DataContext.PinSnapshotCommand,
-                                            RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"/>
 
                                 <TextBlock x:Name="PctText"
                                            DockPanel.Dock="Right"
@@ -1146,10 +1172,10 @@
                     <TextBlock Text="{Binding CurrentVersion}"
                        FontSize="11" Foreground="#52525b"
                        Margin="0,0,12,0"/>
-                    <ProgressBar IsIndeterminate="{Binding IsBusy}"
+                    <ProgressBar Value="{Binding RefreshProgress}"
+                         Maximum="{Binding RefreshTotal}"
                          Width="120" Height="4"
-                         Background="#27272a" Foreground="#f59e0b"
-                         />
+                         Background="#27272a" Foreground="#f59e0b"/>
                 </StackPanel>
             </Grid>
         </Border>

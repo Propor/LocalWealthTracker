@@ -21,10 +21,10 @@ public sealed class PricedItem
     // ── Sparkline (not serialized into snapshots) ───────────────
 
     [JsonIgnore]
-    public List<double?>? SparklineData { get; init; }
+    public List<double?>? SparklineData { get; set; }
 
     [JsonIgnore]
-    public double SparklineTrend { get; init; }
+    public double SparklineTrend { get; set; }
 
     [JsonIgnore]
     public bool IsSparklineUp => SparklineTrend >= 0;
@@ -63,16 +63,41 @@ public sealed class UnpricedItem
     public string Category { get; init; } = "";
 }
 
-public sealed class TabSummary
+public sealed class TabSummary : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     public string Name { get; init; } = "";
     public int Index { get; init; }
     public string Type { get; init; } = "";
     public Color Color { get; init; }
-    public double TotalChaos { get; set; }
-    public double TotalDivine { get; set; }
-    public int ItemCount { get; set; }
-    public List<PricedItem> Items { get; init; } = [];
+    public List<PricedItem> Items { get; set; } = [];
+
+    private double _totalChaos;
+    public double TotalChaos
+    {
+        get => _totalChaos;
+        set { if (SetProperty(ref _totalChaos, value)) OnPropertyChanged(nameof(Summary)); }
+    }
+
+    private double _totalDivine;
+    public double TotalDivine
+    {
+        get => _totalDivine;
+        set { if (SetProperty(ref _totalDivine, value)) OnPropertyChanged(nameof(Summary)); }
+    }
+
+    private int _itemCount;
+    public int ItemCount
+    {
+        get => _itemCount;
+        set { if (SetProperty(ref _itemCount, value)) OnPropertyChanged(nameof(Summary)); }
+    }
+
+    private bool _isRefreshing;
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set => SetProperty(ref _isRefreshing, value);
+    }
 
     public string Summary =>
         $"{TotalDivine:N1} div  ({TotalChaos:N0}c)  •  {ItemCount} items";
