@@ -77,6 +77,7 @@ public sealed class StashService : IDisposable
     /// <summary>Fetches all items in a single stash tab.</summary>
     public async Task<(List<StashItem>? Items, string? Error)>
         GetTabItemsAsync(string league, int tabIndex,
+            IProgress<string>? progress = null,
             CancellationToken ct = default)
     {
         EnsureClient();
@@ -87,7 +88,7 @@ public sealed class StashService : IDisposable
             var url = $"{BaseUrl}?league={Uri.EscapeDataString(league)}" +
                       $"&tabs=0&tabIndex={tabIndex}";
 
-            var (response, error) = await SafeRequestAsync(url, ct);
+            var (response, error) = await SafeRequestAsync(url, ct, progress: progress);
             if (error != null) return (null, error);
 
             var data = JsonSerializer.Deserialize<StashTabResponse>(response!);
@@ -125,7 +126,7 @@ public sealed class StashService : IDisposable
 
             var task = Task.Run(async () =>
             {
-                var (items, error) = await GetTabItemsAsync(league, tabIndex, ct);
+                var (items, error) = await GetTabItemsAsync(league, tabIndex, progress, ct);
                 results[index] = (tabIndex, items, error);
 
                 var done = Interlocked.Increment(ref completed);
@@ -162,9 +163,11 @@ public sealed class StashService : IDisposable
     /// <summary>
     /// Makes a request with automatic retry on 429 (rate limit).
     /// Reads rate limit headers to determine wait time.
+    /// Reports a per-second countdown via <paramref name="progress"/> while waiting.
     /// </summary>
     private async Task<(string? Body, string? Error)>
-        SafeRequestAsync(string url, CancellationToken ct, int retries = 2)
+        SafeRequestAsync(string url, CancellationToken ct, int retries = 2,
+            IProgress<string>? progress = null)
     {
         for (int attempt = 0; attempt <= retries; attempt++)
         {
@@ -183,7 +186,11 @@ public sealed class StashService : IDisposable
                     var waitSeconds = GetRetryAfterSeconds(response);
                     if (attempt < retries)
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(waitSeconds), ct);
+                        for (int s = waitSeconds; s > 0; s--)
+                        {
+                            progress?.Report($"⏳ Rate limited — retrying in {s}s…");
+                            await Task.Delay(1000, ct);
+                        }
                         continue;
                     }
                     return (null, $"Rate limited after {retries + 1} attempts.");

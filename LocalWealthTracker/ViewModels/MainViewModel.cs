@@ -98,6 +98,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _canShowDiff;
     public ObservableCollection<DiffItem> DiffItems { get; } = [];
 
+    // ── Modifier checker ────────────────────────────────────────
+    [ObservableProperty] private bool _isShowingModItems;
+    public ObservableCollection<ModCheckedItem> ModCheckedItems { get; } = [];
+    public List<ModifierProfile> ModifierProfiles { get; private set; } = [];
+
     // ── Collections ─────────────────────────────────────────────
     public ObservableCollection<TabSummary> Tabs { get; } = [];
     public RangeObservableCollection<PricedItem> SelectedTabItems { get; } = new();
@@ -317,6 +322,7 @@ public partial class MainViewModel : ObservableObject
         SelectedSnapshot = null;
         _updatingSelection = false;
 
+        IsShowingModItems = false;
         IsShowingUnpriced = true;
         _allCurrentItems = [];
         SelectedTabItems.Clear();
@@ -408,8 +414,9 @@ public partial class MainViewModel : ObservableObject
                     continue;
                 }
 
+                var rawItems = items ?? new List<StashItem>();
                 var (priced, unpriced) = _resolver.PriceTab(
-                    items ?? new List<StashItem>(),
+                    rawItems,
                     DivinePrice, settings.MinItemValueChaos, tabInfo.Name, tabInfo.Index);
                 double tabTotal = priced.Sum(x => x.TotalPriceChaos);
 
@@ -417,6 +424,14 @@ public partial class MainViewModel : ObservableObject
 
                 var color = Color.FromRgb(
                     (byte)tabInfo.ColorR, (byte)tabInfo.ColorG, (byte)tabInfo.ColorB);
+
+                // Mod checker: if this tab has a profile assigned, check items
+                var modProfile = !string.IsNullOrEmpty(tabInfo.ModifierProfileId)
+                    ? settings.ModifierProfiles.FirstOrDefault(p => p.Id == tabInfo.ModifierProfileId)
+                    : null;
+                var modItems = modProfile != null
+                    ? PriceResolver.CheckMods(rawItems, modProfile)
+                    : new List<ModCheckedItem>();
 
                 tabSummaries.Add(new TabSummary
                 {
@@ -428,7 +443,10 @@ public partial class MainViewModel : ObservableObject
                     TotalDivine = DivinePrice > 0
                         ? Math.Round(tabTotal / DivinePrice, 2) : 0,
                     ItemCount = priced.Count,
-                    Items = priced
+                    Items = priced,
+                    ModifierProfileId   = tabInfo.ModifierProfileId,
+                    ModifierProfileName = modProfile?.Name,
+                    ModItems            = modItems
                 });
 
                 grandTotal += tabTotal;
@@ -478,23 +496,21 @@ public partial class MainViewModel : ObservableObject
             {
                 if (existingByIndex.TryGetValue(tab.Index, out var existing))
                 {
-                    existing.TotalChaos  = tab.TotalChaos;
-                    existing.TotalDivine = tab.TotalDivine;
-                    existing.ItemCount   = tab.ItemCount;
-                    existing.Items       = tab.Items;
+                    existing.TotalChaos          = tab.TotalChaos;
+                    existing.TotalDivine         = tab.TotalDivine;
+                    existing.ItemCount           = tab.ItemCount;
+                    existing.Items               = tab.Items;
+                    existing.ModifierProfileId   = tab.ModifierProfileId;
+                    existing.ModifierProfileName = tab.ModifierProfileName;
+                    existing.ModItems            = tab.ModItems;
                 }
             }
 
-            // Add/remove tabs that appeared or disappeared
+            // Compute which tabs appeared or disappeared
             var newIndices      = ordered.Select(t => t.Index).ToHashSet();
             var existingIndices = _liveTabs.Select(t => t.Index).ToHashSet();
 
-            foreach (var tab in ordered.Where(t => !existingIndices.Contains(t.Index)))
-                Tabs.Add(tab);
-            foreach (var tab in _liveTabs.Where(t => t.Index >= 0 && !newIndices.Contains(t.Index)).ToList())
-                Tabs.Remove(tab);
-
-            // Refresh the "All Items" aggregate tab
+            // Update / create the "All Items" aggregate entry in _liveTabs
             var allItemsExisting = _liveTabs.FirstOrDefault(t => t.Index == -1);
             if (allItemsExisting != null)
             {
@@ -503,12 +519,34 @@ public partial class MainViewModel : ObservableObject
                 allItemsExisting.ItemCount   = allItemsTab.ItemCount;
                 allItemsExisting.Items       = allItemsTab.Items;
             }
-            else
+
+            // Rebuild _liveTabs from the merged result — never from Tabs,
+            // because Tabs may currently hold snapshot data.
+            _liveTabs = new List<TabSummary>
             {
-                Tabs.Insert(0, allItemsTab);
+                allItemsExisting ?? allItemsTab
+            };
+            foreach (var tab in ordered)
+            {
+                _liveTabs.Add(
+                    existingByIndex.TryGetValue(tab.Index, out var existing)
+                        ? existing
+                        : tab);
             }
 
-            _liveTabs = Tabs.ToList();
+            // Only update the visible Tabs collection when live tabs are showing.
+            // When a snapshot is selected, leave Tabs untouched; the corrected
+            // _liveTabs will be applied when the snapshot is deselected.
+            if (SelectedSnapshot == null)
+            {
+                foreach (var tab in ordered.Where(t => !existingIndices.Contains(t.Index)))
+                    Tabs.Add(tab);
+                foreach (var tab in _liveTabs.Where(t => t.Index >= 0 && !newIndices.Contains(t.Index)).ToList())
+                    Tabs.Remove(tab);
+
+                if (allItemsExisting == null)
+                    Tabs.Insert(0, allItemsTab);
+            }
 
             // Stagger the flash: clear IsRefreshing one tab at a time
             foreach (var tab in _liveTabs)
@@ -538,8 +576,9 @@ public partial class MainViewModel : ObservableObject
             });
             LoadHistory(league);
 
-            // 8 ── Auto-select All Items
-            SelectedTab = _liveTabs.FirstOrDefault(t => t.Index == -1);
+            // 8 ── Auto-select All Items (only when live tabs are visible)
+            if (SelectedSnapshot == null)
+                SelectedTab = _liveTabs.FirstOrDefault(t => t.Index == -1);
 
             var cacheNote = _prices.LastLoadedAt.HasValue
                 ? $"  •  Prices from {_prices.LastLoadedAt:HH:mm}"
@@ -578,9 +617,42 @@ public partial class MainViewModel : ObservableObject
         _updatingSelection = true;
 
         SelectedSnapshot = null;
-        ShowItems(value?.Items, value?.Name ?? "(select a tab or snapshot)");
+
+        if (value?.IsModCheckerTab == true && value.ModItems.Count > 0)
+        {
+            ShowModItems(value);
+        }
+        else if (value?.IsModCheckerTab == true && value.ModItems.Count == 0)
+        {
+            // Profile assigned but tab not yet refreshed
+            IsShowingModItems = false;
+            ShowItems(value.Items, value.Name);
+            if (value.Items.Count == 0)
+                ItemsHeader = $"🔍 {value.ModifierProfileName ?? "Modifier Check"} — Refresh to scan modifiers";
+        }
+        else
+        {
+            IsShowingModItems = false;
+            ShowItems(value?.Items, value?.Name ?? "(select a tab or snapshot)");
+        }
 
         _updatingSelection = false;
+    }
+
+    private void ShowModItems(TabSummary tab)
+    {
+        IsShowingUnpriced  = false;
+        IsShowingModItems  = true;
+        _allCurrentItems   = [];
+        SearchText         = "";
+
+        ModCheckedItems.Clear();
+        foreach (var item in tab.ModItems)
+            ModCheckedItems.Add(item);
+
+        int matchCount = tab.ModItems.Count(x => x.IsMatch);
+        ItemsHeader  = $"🔍 {tab.ModifierProfileName ?? "Modifier Check"} — {matchCount} match{(matchCount == 1 ? "" : "es")} / {tab.ModItems.Count} items";
+        ItemCountText = $"{matchCount} match{(matchCount == 1 ? "" : "es")}";
     }
 
     partial void OnSelectedSnapshotChanged(WealthSnapshot? value)
@@ -689,6 +761,7 @@ public partial class MainViewModel : ObservableObject
     private void ShowItems(List<PricedItem>? items, string header)
     {
         IsShowingUnpriced = false;
+        IsShowingModItems = false;
         _allCurrentItems = items ?? [];
         ItemsHeader = header;
         SearchText = "";
@@ -882,6 +955,47 @@ public partial class MainViewModel : ObservableObject
         LoadFromSettings();
     }
 
+    // ── Modifier profile assignment ──────────────────────────────
+
+    /// <summary>
+    /// Assigns (or removes) a modifier profile from a tab and persists to settings.
+    /// Called from the code-behind right-click context menu.
+    /// </summary>
+    public void SetTabModifierProfile(TabSummary tab, string? profileId)
+    {
+        var s = _data.LoadSettings();
+        var savedTab = s.Tabs.FirstOrDefault(t => t.Index == tab.Index);
+        if (savedTab == null) return;
+
+        savedTab.ModifierProfileId = profileId;
+        _data.SaveSettings(s);
+
+        // Update in-memory tab
+        var profile = profileId != null
+            ? s.ModifierProfiles.FirstOrDefault(p => p.Id == profileId)
+            : null;
+        tab.ModifierProfileId   = profileId;
+        tab.ModifierProfileName = profile?.Name;
+
+        // If mod items haven't been loaded yet (no refresh), clear them
+        if (profileId == null)
+            tab.ModItems = [];
+
+        // If this tab is currently selected, refresh the view
+        if (SelectedTab == tab)
+        {
+            if (tab.IsModCheckerTab && tab.ModItems.Count > 0)
+                ShowModItems(tab);
+            else
+            {
+                IsShowingModItems = false;
+                ShowItems(tab.Items, tab.Name);
+                if (tab.IsModCheckerTab && tab.Items.Count == 0)
+                    ItemsHeader = $"🔍 {tab.ModifierProfileName ?? "Modifier Check"} — Refresh to scan modifiers";
+            }
+        }
+    }
+
     // ── Chart ───────────────────────────────────────────────────
 
     private void BuildChart(List<WealthSnapshot> newestFirst)
@@ -977,6 +1091,7 @@ public partial class MainViewModel : ObservableObject
         var s = _data.LoadSettings();
         LeagueDisplay = string.IsNullOrWhiteSpace(s.League) ? "(not set)" : s.League;
         SyncedTabCount = s.Tabs.Count(t => t.IsSynced);
+        ModifierProfiles = s.ModifierProfiles;
         LoadHistory(s.League);
         UpdateAutoTimer(s.AutoRefreshMinutes);
         UpdateGoal();

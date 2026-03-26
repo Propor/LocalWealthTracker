@@ -71,6 +71,12 @@ public sealed class TabSummary : CommunityToolkit.Mvvm.ComponentModel.Observable
     public Color Color { get; init; }
     public List<PricedItem> Items { get; set; } = [];
 
+    // ── Modifier profile ────────────────────────────────────────
+    public string? ModifierProfileId { get; set; }
+    public string? ModifierProfileName { get; set; }
+    public List<ModCheckedItem> ModItems { get; set; } = [];
+    public bool IsModCheckerTab => ModifierProfileId != null;
+
     private double _totalChaos;
     public double TotalChaos
     {
@@ -154,6 +160,7 @@ public sealed class SavedTab
     public int ColorG { get; set; }
     public int ColorB { get; set; }
     public bool IsSynced { get; set; }
+    public string? ModifierProfileId { get; set; }
 }
 
 public sealed class AppSettings
@@ -165,6 +172,40 @@ public sealed class AppSettings
     public double DivineGoal { get; set; } = 0;
     public List<SavedTab> Tabs { get; set; } = [];
     public List<string> TabOrder { get; set; } = [];
+    public List<ModifierProfile> ModifierProfiles { get; set; } = [];
+}
+
+// ── Modifier profiles ────────────────────────────────────────────────────────
+
+public sealed class ModifierProfile
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>Partial mod strings to match (case-insensitive contains).</summary>
+    public List<string> Modifiers { get; set; } = [];
+}
+
+public sealed class ModCheckedItem
+{
+    public string Name { get; init; } = "";
+    public string? Icon { get; init; }
+    public int FrameType { get; init; }
+    public bool IsMatch { get; init; }
+    /// <summary>Matched mod lines joined with " | ".</summary>
+    public string MatchedModsText { get; init; } = "";
+    /// <summary>All mods joined with newline (used as tooltip).</summary>
+    public string AllModsText { get; init; } = "";
+
+    public string RarityLabel => FrameType switch
+    {
+        1 => "Magic",
+        2 => "Rare",
+        3 => "Unique",
+        4 => "Gem",
+        _ => "Normal"
+    };
+
+    public string StatusText => IsMatch ? $"✓  {MatchedModsText}" : "—";
 }
 
 public sealed class DiffItem

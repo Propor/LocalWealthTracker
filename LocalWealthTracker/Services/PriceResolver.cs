@@ -125,6 +125,56 @@ public sealed class PriceResolver(PriceService prices)
             .ToList();
     }
 
+    /// <summary>
+    /// Checks all items in a tab against a modifier profile.
+    /// Only includes items that can carry mods (magic/rare/unique or any item with mods).
+    /// Matches are sorted first, then alphabetically.
+    /// </summary>
+    public static List<ModCheckedItem> CheckMods(
+        IEnumerable<StashItem> items, ModifierProfile profile)
+    {
+        var result = new List<ModCheckedItem>();
+
+        foreach (var item in items)
+        {
+            var allMods = new List<string>();
+            if (item.ImplicitMods != null) allMods.AddRange(item.ImplicitMods);
+            if (item.ExplicitMods  != null) allMods.AddRange(item.ExplicitMods);
+            if (item.CraftedMods   != null) allMods.AddRange(item.CraftedMods);
+
+            // Skip items that can't have meaningful mods and have none
+            if (allMods.Count == 0 && item.FrameType is not (1 or 2 or 3))
+                continue;
+
+            var matched = allMods
+                .Where(mod => profile.Modifiers.Any(p =>
+                    !string.IsNullOrWhiteSpace(p) &&
+                    mod.Contains(p, StringComparison.OrdinalIgnoreCase)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // Build display name: show rare name + base type if present
+            string displayName = !string.IsNullOrEmpty(item.Name)
+                ? $"{item.Name}  •  {item.TypeLine}"
+                : item.TypeLine;
+
+            result.Add(new ModCheckedItem
+            {
+                Name             = displayName,
+                Icon             = item.Icon,
+                FrameType        = item.FrameType,
+                IsMatch          = matched.Count > 0,
+                MatchedModsText  = string.Join("  |  ", matched),
+                AllModsText      = string.Join("\n", allMods)
+            });
+        }
+
+        return result
+            .OrderByDescending(x => x.IsMatch)
+            .ThenBy(x => x.Name)
+            .ToList();
+    }
+
     private double? Resolve(StashItem item)
     {
         return item.FrameType switch

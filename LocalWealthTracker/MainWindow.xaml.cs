@@ -179,4 +179,89 @@ public partial class MainWindow : Window
         }
         return null;
     }
+
+    // ── Tab right-click context menu ─────────────────────────────
+
+    private void TabsList_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var item = FindAncestor<ListBoxItem>((DependencyObject)e.OriginalSource);
+        if (item?.DataContext is not TabSummary tab) return;
+        if (tab.Index == -1) return; // "All Items" aggregate — no profile assignment
+
+        var vm = (MainViewModel)DataContext;
+        var menu = new ContextMenu
+        {
+            Background  = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x18, 0x18, 0x1b)),
+            BorderBrush = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x3f, 0x3f, 0x46)),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(0, 4, 0, 4)
+        };
+
+        // "Assign profile" header item (disabled, acts as label)
+        var assignHeader = BuildMenuItem("Assign Modifier Profile", null, isHeader: true);
+        menu.Items.Add(assignHeader);
+
+        if (vm.ModifierProfiles.Count == 0)
+        {
+            var noProfiles = BuildMenuItem("  No profiles — click Manage Profiles…", null, isHeader: false);
+            noProfiles.IsEnabled = false;
+            menu.Items.Add(noProfiles);
+        }
+        else
+        {
+            foreach (var profile in vm.ModifierProfiles)
+            {
+                var profileItem = BuildMenuItem($"  {profile.Name}", null, isHeader: false);
+                profileItem.IsChecked = tab.ModifierProfileId == profile.Id;
+                var profileId = profile.Id;
+                profileItem.Click += (_, _) => vm.SetTabModifierProfile(tab, profileId);
+                menu.Items.Add(profileItem);
+            }
+        }
+
+        if (tab.ModifierProfileId != null)
+        {
+            menu.Items.Add(new Separator());
+            var clearItem = BuildMenuItem("✕  Clear Modifier Profile", null, isHeader: false);
+            clearItem.Click += (_, _) => vm.SetTabModifierProfile(tab, null);
+            menu.Items.Add(clearItem);
+        }
+
+        menu.Items.Add(new Separator());
+        var manageItem = BuildMenuItem("⚙  Manage Profiles…", null, isHeader: false);
+        manageItem.Click += (_, _) => OpenModifierProfilesWindow();
+        menu.Items.Add(manageItem);
+
+        menu.IsOpen = true;
+        e.Handled   = true;
+    }
+
+    private static MenuItem BuildMenuItem(string header, object? icon, bool isHeader)
+    {
+        var item = new MenuItem
+        {
+            Header     = header,
+            Foreground = isHeader
+                ? new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x71, 0x71, 0x7a))
+                : new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0xf4, 0xf4, 0xf5)),
+            Background  = System.Windows.Media.Brushes.Transparent,
+            IsEnabled   = !isHeader,
+            FontFamily  = new System.Windows.Media.FontFamily("Segoe UI"),
+            FontSize    = 13,
+            Padding     = new Thickness(12, 4, 12, 4)
+        };
+        return item;
+    }
+
+    private void OpenModifierProfilesWindow()
+    {
+        var win = new ModifierProfilesWindow { Owner = this };
+        win.ShowDialog();
+        // Reload profiles into ViewModel after the dialog closes
+        ((MainViewModel)DataContext).LoadFromSettings();
+    }
 }

@@ -589,6 +589,7 @@
                          AllowDrop="True"
                          PreviewMouseLeftButtonDown="TabsList_PreviewMouseLeftButtonDown"
                          PreviewMouseMove="TabsList_PreviewMouseMove"
+                         PreviewMouseRightButtonUp="TabsList_PreviewMouseRightButtonUp"
                          DragOver="TabsList_DragOver"
                          Drop="TabsList_Drop">
                     <ListBox.ItemTemplate>
@@ -602,6 +603,20 @@
                                                    Text="{Binding TotalDivine, StringFormat='{}{0:N1}d'}"
                                                    Foreground="#f59e0b" FontWeight="SemiBold"
                                                    VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        <!-- Mod profile badge -->
+                                        <Border DockPanel.Dock="Right"
+                                                Background="#1e3a5f" BorderBrush="#3b82f6"
+                                                BorderThickness="1" CornerRadius="3"
+                                                Padding="3,1" Margin="0,0,4,0"
+                                                VerticalAlignment="Center"
+                                                ToolTip="{Binding ModifierProfileName,
+                                                    StringFormat='Modifier profile: {0}'}">
+                                            <Border.Visibility>
+                                                <Binding Path="IsModCheckerTab"
+                                                         Converter="{StaticResource BoolToVis}"/>
+                                            </Border.Visibility>
+                                            <TextBlock Text="🔍" FontSize="10" Foreground="#93c5fd"/>
+                                        </Border>
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
@@ -801,6 +816,9 @@
                                     <DataTrigger Binding="{Binding IsDiffMode}" Value="True">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsShowingModItems}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.Style>
@@ -936,6 +954,110 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Mod checker grid (visible when showing mod items) -->
+                    <DataGrid ItemsSource="{Binding ModCheckedItems}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserSortColumns="True" SelectionMode="Single"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling">
+
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsShowingModItems}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.Style>
+
+                        <!-- Row style: gold highlight for matched items -->
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Height" Value="36"/>
+                                <Setter Property="Background" Value="#18181b"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMatch}" Value="True">
+                                        <Setter Property="Background" Value="#1a2a14"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+
+                        <DataGrid.Columns>
+                            <!-- Item column: icon + name -->
+                            <DataGridTemplateColumn Header="Item" Width="260"
+                                                    MinWidth="160" SortMemberPath="Name">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="2,0">
+                                            <Image DockPanel.Dock="Left"
+                                                   Width="28" Height="28"
+                                                   Margin="0,0,8,0"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                                   VerticalAlignment="Center"
+                                                   Source="{Binding Icon,
+                                                       Converter={StaticResource UrlToImage}}"/>
+                                            <TextBlock Text="{Binding Name}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#a1a1aa"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsMatch}" Value="True">
+                                                                <Setter Property="Foreground" Value="#f4f4f5"/>
+                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Rarity column -->
+                            <DataGridTextColumn Header="Rarity"
+                                                Binding="{Binding RarityLabel}" Width="70">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="#71717a"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Match status + matched mods -->
+                            <DataGridTemplateColumn Header="Matched Modifiers"
+                                                    Width="*" MinWidth="200"
+                                                    SortMemberPath="IsMatch">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StatusText}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding AllModsText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#52525b"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMatch}" Value="True">
+                                                            <Setter Property="Foreground" Value="#4ade80"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 

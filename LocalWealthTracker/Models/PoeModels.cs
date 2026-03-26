@@ -95,6 +95,15 @@ public sealed class StashItem
 
     [JsonPropertyName("sockets")]
     public List<ItemSocket>? Sockets { get; set; }
+
+    [JsonPropertyName("implicitMods")]
+    public List<string>? ImplicitMods { get; set; }
+
+    [JsonPropertyName("explicitMods")]
+    public List<string>? ExplicitMods { get; set; }
+
+    [JsonPropertyName("craftedMods")]
+    public List<string>? CraftedMods { get; set; }
 }
 
 public sealed class ItemProperty

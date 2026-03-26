@@ -140,6 +140,9 @@ public partial class SettingsViewModel : ObservableObject
         }
 
         var existing = _data.LoadSettings();
+        // Build a quick lookup to preserve ModifierProfileId per tab index
+        var existingTabMap = existing.Tabs.ToDictionary(t => t.Index);
+
         _data.SaveSettings(new AppSettings
         {
             League = League,
@@ -148,6 +151,7 @@ public partial class SettingsViewModel : ObservableObject
             PriceCacheMinutes = PriceCacheMinutes,
             DivineGoal = DivineGoal,
             TabOrder = existing.TabOrder,
+            ModifierProfiles = existing.ModifierProfiles,   // preserve profiles
             Tabs = Tabs.Select(t => new SavedTab
             {
                 Index = t.Index,
@@ -156,7 +160,10 @@ public partial class SettingsViewModel : ObservableObject
                 ColorR = t.Color.R,
                 ColorG = t.Color.G,
                 ColorB = t.Color.B,
-                IsSynced = t.IsSynced
+                IsSynced = t.IsSynced,
+                // Preserve existing modifier profile assignment for each tab
+                ModifierProfileId = existingTabMap.TryGetValue(t.Index, out var et)
+                    ? et.ModifierProfileId : null
             }).ToList()
         });
 
