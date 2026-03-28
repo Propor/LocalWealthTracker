@@ -177,12 +177,44 @@ public sealed class AppSettings
 
 // ── Modifier profiles ────────────────────────────────────────────────────────
 
+public sealed class ProfileMod
+{
+    [JsonPropertyName("modText")]
+    public string ModText { get; set; } = "";
+
+    /// <summary>Exact base type (e.g. "Astral Plate"). Null means use BaseTypeGroup or any.</summary>
+    [JsonPropertyName("baseType")]
+    public string? BaseType { get; set; }
+
+    /// <summary>When set, matches any item whose base type is in this group (e.g. all Armour bases).
+    /// Populated at add-time from the trade items API so no external lookup is needed at match-time.</summary>
+    [JsonPropertyName("baseTypeGroup")]
+    public List<string>? BaseTypeGroup { get; set; }
+
+    /// <summary>Display label for the group constraint (e.g. "Armour").</summary>
+    [JsonPropertyName("baseGroupLabel")]
+    public string? BaseGroupLabel { get; set; }
+
+    [JsonIgnore]
+    public bool HasBaseConstraint =>
+        !string.IsNullOrEmpty(BaseType) || !string.IsNullOrEmpty(BaseGroupLabel);
+
+    [JsonIgnore]
+    public string BadgeText =>
+        !string.IsNullOrEmpty(BaseType) ? BaseType! : $"Any {BaseGroupLabel}";
+
+    [JsonIgnore]
+    public string DisplayText =>
+        !string.IsNullOrEmpty(BaseType)       ? $"[{BaseType}]  {ModText}" :
+        !string.IsNullOrEmpty(BaseGroupLabel) ? $"[Any {BaseGroupLabel}]  {ModText}" :
+        ModText;
+}
+
 public sealed class ModifierProfile
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    /// <summary>Partial mod strings to match (case-insensitive contains).</summary>
-    public List<string> Modifiers { get; set; } = [];
+    public List<ProfileMod> Modifiers { get; set; } = [];
 }
 
 public sealed class ModCheckedItem

@@ -1,4 +1,5 @@
-﻿using LocalWealthTracker.Models;
+﻿using System.Text.RegularExpressions;
+using LocalWealthTracker.Models;
 
 namespace LocalWealthTracker.Services;
 
@@ -129,10 +130,28 @@ public sealed class PriceResolver(PriceService prices)
     /// Checks all items in a tab against a modifier profile.
     /// Only includes items that can carry mods (magic/rare/unique or any item with mods).
     /// Matches are sorted first, then alphabetically.
+    /// <para>
+    /// Profile modifier strings may contain <c>#</c> as a numeric placeholder
+    /// (as returned by the PoE trade API), e.g. <c>Adds # to # Cold Damage</c>.
+    /// These are converted to a regex pattern that matches the rolled value.
+    /// Plain strings without <c>#</c> are matched via case-insensitive Contains.
+    /// </para>
     /// </summary>
     public static List<ModCheckedItem> CheckMods(
         IEnumerable<StashItem> items, ModifierProfile profile)
     {
+        // Pre-compile patterns once per call, pairing each with its base type constraint
+        var patterns = profile.Modifiers
+            .Where(p => !string.IsNullOrWhiteSpace(p.ModText))
+            .Select(p => (
+                ProfileMod: p,
+                Regex: p.ModText.Contains('#') ? BuildModPattern(p.ModText) : null
+            ))
+            .ToList();
+
+        if (patterns.Count == 0)
+            return [];
+
         var result = new List<ModCheckedItem>();
 
         foreach (var item in items)
@@ -142,30 +161,50 @@ public sealed class PriceResolver(PriceService prices)
             if (item.ExplicitMods  != null) allMods.AddRange(item.ExplicitMods);
             if (item.CraftedMods   != null) allMods.AddRange(item.CraftedMods);
 
-            // Skip items that can't have meaningful mods and have none
             if (allMods.Count == 0 && item.FrameType is not (1 or 2 or 3))
                 continue;
 
+            // An item matches a ProfileMod when:
+            //   1. The base type constraint is met (null/empty = any base)
+            //   2. At least one of the item's mod lines matches the mod text pattern
+            var itemBase = item.BaseType ?? item.TypeLine;
+
             var matched = allMods
-                .Where(mod => profile.Modifiers.Any(p =>
-                    !string.IsNullOrWhiteSpace(p) &&
-                    mod.Contains(p, StringComparison.OrdinalIgnoreCase)))
+                .Where(mod => patterns.Any(p =>
+                {
+                    // Base type gate — specific base takes priority, then group, then any
+                    if (!string.IsNullOrEmpty(p.ProfileMod.BaseType))
+                    {
+                        if (!itemBase.Equals(p.ProfileMod.BaseType, StringComparison.OrdinalIgnoreCase))
+                            return false;
+                    }
+                    else if (p.ProfileMod.BaseTypeGroup is { Count: > 0 })
+                    {
+                        if (!p.ProfileMod.BaseTypeGroup.Any(bt =>
+                                bt.Equals(itemBase, StringComparison.OrdinalIgnoreCase)))
+                            return false;
+                    }
+
+                    // Mod text match
+                    return p.Regex is not null
+                        ? p.Regex.IsMatch(mod)
+                        : mod.Contains(p.ProfileMod.ModText, StringComparison.OrdinalIgnoreCase);
+                }))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // Build display name: show rare name + base type if present
             string displayName = !string.IsNullOrEmpty(item.Name)
                 ? $"{item.Name}  •  {item.TypeLine}"
                 : item.TypeLine;
 
             result.Add(new ModCheckedItem
             {
-                Name             = displayName,
-                Icon             = item.Icon,
-                FrameType        = item.FrameType,
-                IsMatch          = matched.Count > 0,
-                MatchedModsText  = string.Join("  |  ", matched),
-                AllModsText      = string.Join("\n", allMods)
+                Name            = displayName,
+                Icon            = item.Icon,
+                FrameType       = item.FrameType,
+                IsMatch         = matched.Count > 0,
+                MatchedModsText = string.Join("  |  ", matched),
+                AllModsText     = string.Join("\n", allMods)
             });
         }
 
@@ -173,6 +212,18 @@ public sealed class PriceResolver(PriceService prices)
             .OrderByDescending(x => x.IsMatch)
             .ThenBy(x => x.Name)
             .ToList();
+    }
+
+    /// <summary>
+    /// Converts a trade-API mod text (e.g. <c>Adds # to # Cold Damage</c>) into
+    /// a compiled <see cref="Regex"/> that matches the rolled value variant.
+    /// <c>#</c> matches integers and decimals; leading/trailing whitespace is ignored.
+    /// </summary>
+    private static Regex BuildModPattern(string modText)
+    {
+        // Escape all regex special chars, then restore # as a number wildcard
+        var escaped = Regex.Escape(modText).Replace(@"\#", @"[\d.,]+");
+        return new Regex(escaped, RegexOptions.IgnoreCase | RegexOptions.Compiled);
     }
 
     private double? Resolve(StashItem item)

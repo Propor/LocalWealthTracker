@@ -1055,7 +1055,11 @@ public partial class MainViewModel : ObservableObject
         double yMax = ordered.Max(s => s.TotalDivine);
 
         double spread = yMax - yMin;
-        double pad = spread > 0 ? spread * 0.25 : Math.Max(yMax * 0.05, 1.0);
+        // Tight padding so variation is clearly visible (5% of spread, or 2% of value for flat lines)
+        double yPad = spread > 0 ? spread * 0.05 : Math.Max(yMax * 0.02, 0.5);
+
+        // Always show at least 5 x-slots so a small number of points don't stretch across the full width
+        double xMax = Math.Max(n - 0.5, 4.5);
 
         ChartXAxes = new Axis[]
         {
@@ -1067,6 +1071,8 @@ public partial class MainViewModel : ObservableObject
                 SeparatorsPaint = new SolidColorPaint(GridColor),
                 ShowSeparatorLines = false,
                 LabelsRotation = 0,
+                MinLimit = -0.5,
+                MaxLimit = xMax,
             }
         };
 
@@ -1078,8 +1084,8 @@ public partial class MainViewModel : ObservableObject
                 TextSize = 10,
                 Labeler = v => $"{v:N1}d",
                 SeparatorsPaint = new SolidColorPaint(GridColor, 1),
-                MinLimit = yMin - pad,
-                MaxLimit = yMax + pad,
+                MinLimit = Math.Max(0, yMin - yPad),
+                MaxLimit = yMax + yPad,
             }
         };
     }
